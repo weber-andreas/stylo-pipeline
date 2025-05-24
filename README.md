@@ -8,7 +8,7 @@ Application of Vision Foundation Models for image editing and Virtual Try-On (VI
 
 ## Pipeline Components
 We utilize several publicly available image editing models like:
-- [x] Background Manipulation: Yahoo's [photo-background-generation](https://github.com/yahoo/photo-background-generation.git) diffusion model
+- [x] Background Manipulation: Yahoo's diffusion model [photo-background-generation](https://github.com/yahoo/photo-background-generation.git) 
 - [ ] Fix Lighting:
-- [ ] Person Selection: Meta's [https://github.com/facebookresearch/sam2](sam2) for semantic segmentation
-- [x] Fit Garment: KAIST Research Group, South Korea [StableVITON](https://github.com/rlawjdghek/StableVITON)
+- [ ] Person Selection: Meta's semantic segmentation model [sam2](https://github.com/facebookresearch/sam2) 
+- [x] Fit Garment: KAIST Research Group, South Korea VITON model [StableVITON](https://github.com/rlawjdghek/StableVITON)
