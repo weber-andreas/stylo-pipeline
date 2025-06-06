@@ -27,3 +27,10 @@ We utilize several publicly available image editing models like:
 	path = building_blocks/StableVITON
 	url = https://github.com/rlawjdghek/StableVITON.git
 ```
+
+
+### Python Environent
+```
+conda env create -f environment.yaml
+conda activate stylo-pipeline
+```

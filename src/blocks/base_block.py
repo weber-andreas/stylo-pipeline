@@ -1,24 +1,17 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 
-class BaseBlock:
-    """
-    Abstract base class for pipeline blocks.
-    Each block should implement the `run` method.
-    """
+class BaseBlock(ABC):
+    """Abstract base class for pipeline blocks."""
 
-    def unload_model(self):
-        """
-        Unload the model if it exists.
-        This method should be overridden by subclasses if they have a model to unload.
-        """
+    @abstractmethod
+    def unload_model(self, *args, **kwargs):
+        """Unload the model if it exists."""
         pass
 
-    def load_model(self):
-        """
-        Load the model from the specified path.
-        This method should be overridden by subclasses if they have a model to load.
-        """
+    @abstractmethod
+    def load_model(self, *args, **kwargs):
+        """Load the model"""
         pass
 
     @abstractmethod

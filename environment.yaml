@@ -1,0 +1,34 @@
+name: stylo-pipeline
+channels:
+  - pytorch
+  - anaconda
+  - defaults
+dependencies:
+  - python=3.10
+  - ipython
+  - pip
+  - pip:
+      - torch==2.0.0
+      - torchvision==0.15.1
+      - torchaudio==2.0.1
+      - pytorch-lightning==1.5.0
+      - einops
+      - opencv-python==4.7.0.72
+      - matplotlib
+      - omegaconf
+      - albumentations
+      - transformers==4.33.2
+      - xformers==0.0.19
+      - triton==2.0.0
+      - open-clip-torch==2.19.0
+      - diffusers==0.20.2
+      - scipy
+      - scikit-image==0.25.2
+      - huggingface_hub==0.25.2
+      - clean-fid==0.1.35
+      - numpy==1.26.4
+      - fire
+      - pillow
+      - sentencepiece
+      - protobuf
+      - webdataset
