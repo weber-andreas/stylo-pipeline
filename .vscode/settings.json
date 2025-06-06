@@ -1,6 +1,6 @@
 // settings.json
 {
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true
+    "source.organizeImports": "explicit"
   }
 }

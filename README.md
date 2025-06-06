@@ -13,3 +13,17 @@ We utilize several publicly available image editing models like:
 - [ ] Person Selection: Meta's semantic segmentation model [sam2](https://github.com/facebookresearch/sam2), Ultralytics: [YOLO-11](https://github.com/ultralytics/ultralytics)
 - [ ] Garment Generator: Stable Diffusion 3.5: [sd3.5](https://github.com/Stability-AI/sd3.5)
 - [x] Fit Garment: KAIST Research Group, South Korea VITON model [StableVITON](https://github.com/rlawjdghek/StableVITON)
+
+
+## Setup
+
+### Additional Foundation Models
+1. Fork repository of foundation model
+2. Clone forked repository under `building_blocks`
+2. Add original repository URL to `.gitsubmodules` file
+
+```
+[submodule "building_blocks/StableVITON"]
+	path = building_blocks/StableVITON
+	url = https://github.com/rlawjdghek/StableVITON.git
+```
