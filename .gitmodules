@@ -7,3 +7,6 @@
 [submodule "building_blocks/sd3_5"]
 	path = building_blocks/sd3_5
 	url = https://github.com/Stability-AI/sd3.5.git
+[submodule "building_blocks/Harmonizer"]
+	path = building_blocks/Harmonizer
+	url = https://github.com/ZHKKKe/Harmonizer.git
