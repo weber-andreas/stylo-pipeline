@@ -22,13 +22,14 @@ def main():
     generator(
         prompt="A futuristic garment design",
         out_dir="results/garment_generator",
-    )"""
+    )
+    """
 
     img_path = "./data/img"
     cloth_path = "./data/cloth"
 
     masking = Masking()
-    masking.load_model()
+    masking.load_model()"""
 
 if __name__ == "__main__":
     main()
