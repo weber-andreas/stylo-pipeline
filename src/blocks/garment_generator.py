@@ -2,6 +2,9 @@ import datetime
 import logging
 import os
 import re
+import warnings
+
+import torch
 
 from building_blocks.sd3_5.sd3_infer import CONFIGS, SD3Inferencer
 from src.blocks.base_block import BaseBlock
@@ -31,14 +34,16 @@ class GarmentGenerator(BaseBlock):
     def __init__(self):
         self.model_folder = "building_blocks/sd3_5/models"
         self.inferencer = SD3Inferencer()
-        self.model_name = "models/sd3_medium.safetensors"  # "models/sd3-large/sd3.5_large.safetensors"
-        self.vae_file = "models/sd3_vae.safetensors"
-        self.controlnet = "models/controlnets/sd3.5_large_controlnet_canny.safetensors"
+        self.model_name = f"{self.model_folder}/sd3_medium.safetensors"  # "models/sd3-large/sd3.5_large.safetensors"
+        # only required for SD3.5_large
+        self.vae_file = None  # f"{self.model_folder}/sd3_vae.safetensors"
+        self.controlnet = None  # f"{self.model_folder}/controlnets/sd3.5_large_controlnet_canny.safetensors"
 
     def unload_model(self):
         del self.inferencer
         logger.info("GarmentGenerator model unloaded.")
 
+    @torch.no_grad()
     def load_model(
         self,
         use_controlnet=False,
@@ -50,20 +55,25 @@ class GarmentGenerator(BaseBlock):
 
         controlnet_ckpt = self.controlnet if use_controlnet else None
 
-        self.inferencer.load(
-            self.model_name,
-            self.vae_file,
-            _shift,
-            controlnet_ckpt,
-            self.model_folder,
-            device,
-            verbose,
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=FutureWarning)
+            # load weights to the inferencer
+            self.inferencer.load(
+                self.model_name,
+                self.vae_file,
+                _shift,
+                controlnet_ckpt,
+                self.model_folder,
+                device,
+                verbose,
+                load_tokenizers=True,
+            )
         logger.info(
             f"GarmentGenerator model loaded: {self.model_name}, "
             f"ControlNet: {controlnet_ckpt if use_controlnet else 'None'}"
         )
 
+    @torch.no_grad()
     def __call__(
         self,
         prompt: str,
@@ -95,8 +105,8 @@ class GarmentGenerator(BaseBlock):
         out_dir = os.path.join(
             out_dir,
             os.path.splitext(os.path.basename(self.model_name))[0],
-            os.path.splitext(os.path.basename(sanitized_prompt))[0][:50]
-            + (postfix or datetime.datetime.now().strftime("_%Y-%m-%dT%H-%M-%S")),
+            # os.path.splitext(os.path.basename(sanitized_prompt))[0][:50]
+            (postfix or datetime.datetime.now().strftime("_%Y-%m-%dT%H-%M-%S")),
         )
 
         os.makedirs(out_dir, exist_ok=False)

@@ -17,7 +17,7 @@ We utilize several publicly available image editing models like:
 
 ## Setup
 
-### Additional Foundation Models
+### Add Foundation Model Repositories to this Codebase
 1. Fork repository of foundation model
 2. Clone forked repository under `building_blocks`
 2. Add original repository URL to `.gitsubmodules` file
@@ -28,6 +28,15 @@ We utilize several publicly available image editing models like:
 	url = https://github.com/rlawjdghek/StableVITON.git
 ```
 
+### Add Model Files to for each Foundation Model
+Most of the model weights are available on huggingface.
+
+
+#### Stable-Diffusion 3.5
+```sh
+huggingface-cli login
+huggingface-cli download stabilityai/stable-diffusion-3.5-medium --local-dir building_blocks/sd3_5
+```
 
 ### Python Environent
 ```
