@@ -5,6 +5,7 @@ import torch
 
 #from src.blocks.garment_generator import GarmentGenerator
 from src.blocks.masking import Masking
+from src.blocks.dense_pose import DensePose
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -31,6 +32,17 @@ def main():
 
     masking = Masking()
     masking.load_model()
+
+    img, fullbody, agn, mask = masking(img_path)
+
+    masking.unload_model()
+
+    dense_pose = DensePose()
+    dense_pose.load_model()
+
+    dense_pose_img = dense_pose(img, fullbody)
+
+    dense_pose.unload_model()
     
 
 if __name__ == "__main__":

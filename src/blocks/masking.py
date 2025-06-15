@@ -1,8 +1,6 @@
 import torch
 from PIL import Image
 import numpy as np
-from sam2.build_sam import build_sam2
-from sam2.sam2_image_predictor import SAM2ImagePredictor
 from lang_sam import LangSAM
 from src.blocks.base_block import BaseBlock
 import torch
@@ -14,13 +12,10 @@ class Masking(BaseBlock):
         super().__init__(*args, **kwargs)
         self.checkpoint = "./building_blocks/sam/checkpoints/sam2.1_hiera_tiny.pt"
         self.model_cfg = "./building_blocks/sam/configs/sam2.1/sam2.1_hiera_t.yaml"
-        self.predictor = None
+        self.lang_sam = None
 
     def unload_model(self):
         """Unload the model if it exists."""
-        #if self.predictor == None:
-        #    print("Sam Predictor not loaded. Won't unload.")
-        #    return
         if self.lang_sam == None:
             print("Lang Sam not laoded. Won't unload.")
             return
@@ -33,7 +28,6 @@ class Masking(BaseBlock):
     def load_model(self):
         """Load the model."""
         print('Create/load Sam Predictor...')
-        #self.predictor = SAM2ImagePredictor(build_sam2(self.model_cfg, self.checkpoint))
         self.lang_sam = LangSAM()
 
 
