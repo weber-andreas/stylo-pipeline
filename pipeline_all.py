@@ -31,6 +31,7 @@ def main():
     img_path = "./data/img/00006_00.jpg"
     cloth_path = "./data/cloth/00008_00.jpg"
     cloth_mask_path = "./data/cloth_mask/00008_00.jpg"
+    dense_pose_path = "./data/dense_pose/00006_00.png"
 
     paths = [img_path, cloth_path, cloth_mask_path]
 
@@ -41,6 +42,9 @@ def main():
     #### Masking and DensePose ####
     cloth = torch.from_numpy(plt.imread(cloth_path)).permute(2, 0, 1) / 255.0
     cloth_mask = torch.from_numpy(plt.imread(cloth_mask_path)).unsqueeze(0) / 255.0
+    dense_pose_img = (
+        torch.from_numpy(plt.imread(dense_pose_path)).permute(2, 0, 1) / 255.0
+    )
     print(f"Cloth shape: {cloth.shape}, Cloth mask shape: {cloth_mask.shape}")
 
     masking = Masking()
