@@ -32,7 +32,6 @@ def main():
     img_path = "./data/img/00006_00.jpg"
     cloth_path = "./data/cloth/00008_00.jpg"
     cloth_mask_path = "./data/cloth_mask/00008_00.jpg"
-    dense_pose_path = "./data/dense_pose/00006_00.png"
 
     paths = [img_path, cloth_path, cloth_mask_path]
 
@@ -48,6 +47,9 @@ def main():
     masking = Masking()
     masking.load_model()
     img, fullbody, agn, mask = masking(img_path)
+    print(img.shape)
+    print(fullbody.shape)
+    print(mask.shape)
     masking.unload_model()
 
     #### Dense Pose ####
@@ -59,19 +61,16 @@ def main():
     #### Background Removal ####
     bg_remover = BackgroundRemover()
     bg_remover.load_model(device=DEVICE, with_masking=False)
-    img_mask = image_utils.tensor_to_image(fullbody)
-    img_pil = image_utils.tensor_to_image(img)
-    imgs = bg_remover(
-        img_pil,
-        prompt="star galaxy, realistic, star wars!!!!! we want yedis, planet",
+    bg_img = bg_remover(
+        img,
+        prompt="golden hour by the sea, warm sunset light, calm ocean waves, distant mountain range in the background, soft clouds, peaceful atmosphere, realistic landscape",
         results_dir="results/background_removal",
         num_images=1,
         device=DEVICE,
-        subject_mask=img_mask,
+        subject_mask=fullbody,
         annotate_images=False,
         save_background=False
     )
-    bg_img = image_utils.image_to_tensor(imgs[0])  # Use the first generated image
     bg_remover.unload_model()
 
     #### Harmonize Image ####

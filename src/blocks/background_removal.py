@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.abspath("./building_blocks/photo-background-generatio
 from diffusers import DiffusionPipeline
 from PIL import Image, ImageOps
 from transparent_background import Remover
+from torchvision import transforms
 
 from src.blocks.base_block import BaseBlock
 from src.utilities import image_utils
@@ -49,10 +50,10 @@ class BackgroundRemover(BaseBlock):
 
     def __call__(
         self,
-        img: Image.Image,
+        img,
         prompt: str,
         results_dir: str,
-        subject_mask: Image.Image | None = None,
+        subject_mask,
         num_images=2,
         device="cuda",
         annotate_images=False,
@@ -60,7 +61,9 @@ class BackgroundRemover(BaseBlock):
     ) -> list[Image.Image]:
         if not hasattr(self, "diffusion_pipeline") or self.diffusion_pipeline is None:
             raise RuntimeError("Background Diffusion is not loaded.")
-
+        result_shape = img.shape[1:]
+        img = image_utils.tensor_to_image(img)
+        subject_mask = image_utils.tensor_to_image(subject_mask)
         # Get foreground mask
         if subject_mask is None:
             if not hasattr(self, "remover") or self.remover is None:
@@ -116,4 +119,7 @@ class BackgroundRemover(BaseBlock):
                     image, os.path.join(results_dir, f"background_image_{i}.png")
                 )
 
-        return images
+        image = image_utils.image_to_tensor(images[0])  # Use the first generated image
+        resize_transform = transforms.Resize(result_shape)
+        image = resize_transform(image)
+        return image
