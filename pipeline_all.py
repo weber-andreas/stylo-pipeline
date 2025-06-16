@@ -39,8 +39,8 @@ def main():
         return
 
     #### Masking and DensePose ####
-    cloth = torch.from_numpy(plt.imread(cloth_path)).permute(2, 0, 1)
-    cloth_mask = torch.from_numpy(plt.imread(cloth_mask_path)).unsqueeze(0)
+    cloth = torch.from_numpy(plt.imread(cloth_path)).permute(2, 0, 1) / 255.0
+    cloth_mask = torch.from_numpy(plt.imread(cloth_mask_path)).unsqueeze(0) / 255.0
     print(f"Cloth shape: {cloth.shape}, Cloth mask shape: {cloth_mask.shape}")
 
     masking = Masking()
@@ -63,7 +63,7 @@ def main():
     image_utils.save_image(img_mask, "results/background_removal/mask.png")
 
     bg_remover = BackgroundRemover()
-    bg_remover.load_model(device=DEVICE)
+    bg_remover.load_model(device=DEVICE, with_masking=False)
     # img = Image.open(img_path).convert("RGB")
     img_pil = image_utils.tensor_to_image(img)
     imgs = bg_remover(
@@ -87,13 +87,23 @@ def main():
     #### Fit Garment to Person ####
     fitter = Fitter()
     fitter.load_model()
+
+    agn_pil = image_utils.tensor_to_image(agn)
+    agn_mask_pil = image_utils.tensor_to_image(mask)
+    dense_pose_pil = image_utils.tensor_to_image(dense_pose_img)
+    img_pil = image_utils.tensor_to_image(img)
+    image_utils.save_image(dense_pose_pil, "results/harmonizer/dense_pose_pil.png")
+    image_utils.save_image(img_pil, "results/harmonizer/img.png")
+    image_utils.save_image(agn_pil, "results/harmonizer/agn_pil.png")
+    image_utils.save_image(agn_mask_pil, "results/harmonizer/agn_mask_pil.png")
+
     styled = fitter(
-        agn=agn,
+        agn=agn * 2 - 1,
         agn_mask=mask,
-        cloth=cloth,
+        cloth=cloth * 2 - 1,
         cloth_mask=cloth_mask,
-        image=img,
-        dense_pose=dense_pose_img,
+        image=img * 2 - 1,  # Normalize to [-1, 1] for Stable VITON
+        dense_pose=dense_pose_img * 2 - 1,
     )
     fitter.unload_model()
     logger.info("Pipeline completed successfully.")
@@ -115,7 +125,7 @@ def main():
         transform_input(stable_viton_input),
         transform_input(outputs),
         title="Stable VITON Input and Output",
-        save_path="results/stable_viton_output.png",
+        save_path="results/final_output/stable_viton_output.png",
     )
 
 

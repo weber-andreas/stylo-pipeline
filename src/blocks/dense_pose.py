@@ -1,9 +1,10 @@
 import cv2
-import torch
 import numpy as np
-from detectron2.engine import DefaultPredictor
-from detectron2.config import get_cfg
+import torch
 from densepose import add_densepose_config
+from detectron2.config import get_cfg
+from detectron2.engine import DefaultPredictor
+
 from src.blocks.base_block import BaseBlock
 
 
@@ -17,9 +18,13 @@ class DensePose(BaseBlock):
         self.cfg = get_cfg()
         add_densepose_config(self.cfg)
         self.cfg.MODEL.MASK_ON = True
-        self.cfg.merge_from_file("./building_blocks/detectron2/projects/DensePose/configs/densepose_rcnn_R_50_FPN_s1x.yaml")
+        self.cfg.merge_from_file(
+            "./building_blocks/detectron2/projects/DensePose/configs/densepose_rcnn_R_50_FPN_s1x.yaml"
+        )
         self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
-        self.cfg.MODEL.WEIGHTS = "./building_blocks/detectron2/model_final_162be9.pkl"  # downloaded model
+        self.cfg.MODEL.WEIGHTS = (
+            "./building_blocks/detectron2/model_final_162be9.pkl"  # downloaded model
+        )
         self.cfg.MODEL.DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     def unload_model(self):
@@ -31,10 +36,9 @@ class DensePose(BaseBlock):
         del self.predictor
         torch.cuda.empty_cache()
 
-
     def load_model(self):
         """Load the model."""
-        print('Create/load DensePose Predictor...')
+        print("Create/load DensePose Predictor...")
         self.predictor = DefaultPredictor(self.cfg)
 
     def __call__(self, image, full_body):
@@ -49,15 +53,19 @@ class DensePose(BaseBlock):
         box_w, box_h = x2 - x1, y2 - y1
 
         dp = instances.pred_densepose[0]
-        labels = torch.argmax(dp.fine_segm.squeeze(), dim=0)  # shape [H, W], values in [0..C-1]
+        labels = torch.argmax(
+            dp.fine_segm.squeeze(), dim=0
+        )  # shape [H, W], values in [0..C-1]
 
         labels_np = labels.cpu().numpy()
 
         labels_vis = (255 * labels_np / labels_np.max()).astype(np.uint8)
 
-        colored_labels = cv2.applyColorMap(labels_vis, cv2.COLORMAP_PARULA)
+        colored_labels = cv2.applyColorMap(labels_vis, cv2.COLORMAP_HSV)
 
-        resized = cv2.resize(colored_labels, (box_w, box_h), interpolation=cv2.INTER_NEAREST)
+        resized = cv2.resize(
+            colored_labels, (box_w, box_h), interpolation=cv2.INTER_NEAREST
+        )
 
         full = np.zeros((h_orig, w_orig, 3), dtype=np.uint8)
         full[y1:y2, x1:x2] = resized

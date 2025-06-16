@@ -16,6 +16,15 @@ We utilize several publicly available image editing models like:
 
 
 ## Setup
+### Install environment
+```sh
+# setup environment and install local dependencies
+./let_it_coock.sh
+
+conda activate stylo2
+conda env update -f environment.yaml
+```
+
 
 ### Add Foundation Model Repositories to this Codebase
 1. Fork repository of foundation model

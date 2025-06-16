@@ -6,16 +6,11 @@ echo "Setting up the environment..."
 source ~/.bashrc
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda create -n stylo2 python=3.10 -y
-conda activate stylo2
-
 
 # First install pytorch
 echo "Installing PyTorch..."
-pip install torch==2.0.0
+pip install torch==2.2.1
 
-# # Install other environment dependencies
-echo "Installing requirements of building blocks..."
-conda env update -f environment.yaml
 
 # Install local wheels like detectro2 and lang-sam (workaround)
 # echo "Installing local packages..."
