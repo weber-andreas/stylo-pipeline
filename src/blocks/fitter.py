@@ -72,7 +72,6 @@ class Fitter(BaseBlock):
             cloth_mask=cloth_mask,
             image=image,
             image_densepose=dense_pose,
-            txt="",
         )
 
         batch = self.transform_input(raw_in)
@@ -106,12 +105,18 @@ class Fitter(BaseBlock):
         )
 
         x_samples = self.model.decode_first_stage(samples)
-        x_sample_img = tensor2img(x_samples[0])
+        x_sample_img = tensor2img(x_samples.float())
 
         return x_sample_img[:,:,::-1]
 
     def transform_input(self, raw_in):
         """Transform the input data into the format required by the model.""" 
         for k, v in raw_in.items():
-            raw_in[k] = v.permute((1, 2, 0)).unsqueeze(0)
+            if type(v) is not torch.Tensor:
+                print(f"Warning: {k} is not a torch.Tensor, skipping transformation.")
+                print(v)
+            else:
+                print(f"Transforming {k} with shape {v.shape}")
+                raw_in[k] = v.permute((1, 2, 0)).unsqueeze(0)
+                print("---> to shape", raw_in[k].shape)
         return raw_in
