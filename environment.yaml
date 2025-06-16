@@ -1,4 +1,4 @@
-name: stylo-pipeline
+name: stylo
 channels:
   - pytorch
   - anaconda

@@ -4,13 +4,13 @@ import sys
 
 sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
 
+import matplotlib.pyplot as plt
 import torch
 
-#from src.blocks.garment_generator import GarmentGenerator
-from src.blocks.masking import Masking
 from src.blocks.dense_pose import DensePose
 from src.blocks.fitter import Fitter
-import matplotlib.pyplot as plt
+from src.blocks.garment_generator import GarmentGenerator
+from src.blocks.masking import Masking
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -21,21 +21,21 @@ torch.cuda.empty_cache()
 
 def main():
     logger.info("Using torch version: %s", torch.__version__)
-    
-    """
+
     #### Gargment Generation ####
     generator = GarmentGenerator()
     generator.load_model(use_controlnet=True, device="cpu", verbose=True)
     generator(
         prompt="A futuristic garment design",
         out_dir="results/garment_generator",
-    )"""
+    )
 
+    #### Masking and DensePose ####
     img_path = "./data/img/00006_00.jpg"
     cloth_path = "./data/cloth/00008_00.jpg"
     cloth_mask_path = "./data/cloth_mask/00008_00.jpg"
 
-    #load_cloth
+    # load_cloth
     if not os.path.exists(cloth_path):
         logger.error("Cloth image not found at %s", cloth_path)
         return
@@ -55,13 +55,14 @@ def main():
     masking.load_model()
 
     img, fullbody, agn, mask = masking(img_path)
-
+    print("Image shape:", img.shape)
     masking.unload_model()
 
     dense_pose = DensePose()
     dense_pose.load_model()
 
     dense_pose_img = dense_pose(img, fullbody)
+    print("DensePose image shape:", dense_pose_img.shape)
 
     dense_pose.unload_model()
 
@@ -78,7 +79,6 @@ def main():
     fitter.unload_model()
     logger.info("Pipeline completed successfully.")
 
-
     # Display the results
     stable_viton_input = {
         "img": img,
@@ -92,14 +92,18 @@ def main():
     outputs = {
         "styled": styled,
     }
-    vis(transform_input(stable_viton_input), transform_input(outputs),
+    vis(
+        transform_input(stable_viton_input),
+        transform_input(outputs),
         title="Stable VITON Input and Output",
-        save_path="results/stable_viton_output.png")
+        save_path="results/stable_viton_output.png",
+    )
+
 
 def vis(input_data, output_data, title, save_path):
     """Visualize input and output data."""
     fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-    
+
     ax[0].imshow(input_data["img"])
     ax[0].set_title("Input Image")
     ax[0].axis("off")
@@ -109,12 +113,13 @@ def vis(input_data, output_data, title, save_path):
     ax[1].axis("off")
 
     plt.suptitle(title)
-    
+
     if save_path:
         plt.savefig(save_path)
 
+
 def transform_input(raw_in):
-    """Transform the input data into the format required by the model.""" 
+    """Transform the input data into the format required by the model."""
     for k, v in raw_in.items():
         if type(v) is not torch.Tensor:
             print(f"Warning: {k} is not a torch.Tensor, skipping transformation.")
@@ -126,6 +131,7 @@ def transform_input(raw_in):
             raw_in[k] = v.permute((1, 2, 0))
             print("---> to shape", raw_in[k].shape)
     return raw_in
-    
+
+
 if __name__ == "__main__":
     main()

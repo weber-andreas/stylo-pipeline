@@ -10,3 +10,9 @@
 [submodule "building_blocks/Harmonizer"]
 	path = building_blocks/Harmonizer
 	url = https://github.com/ZHKKKe/Harmonizer.git
+[submodule "building_blocks/detectron2"]
+	path = building_blocks/detectron2
+	url = https://github.com/weber-andreas/detectron2.git
+[submodule "building_blocks/lang-segment-anything"]
+	path = building_blocks/lang-segment-anything
+	url = https://github.com/weber-andreas/lang-segment-anything.git
