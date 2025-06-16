@@ -1,10 +1,15 @@
-from src.blocks.base_block import BaseBlock
-from omegaconf import OmegaConf
+import os
+import sys
+
 import torch
+from omegaconf import OmegaConf
+
 from building_blocks.StableVITON.cldm.model import create_model
 from building_blocks.StableVITON.cldm.plms_hacked import PLMSSampler
 from building_blocks.StableVITON.utils import tensor2img
+from src.blocks.base_block import BaseBlock
 
+sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
 
 
 class Fitter(BaseBlock):
@@ -27,8 +32,7 @@ class Fitter(BaseBlock):
         self.model = None
         self.sampler = None
 
-        self.shape = (4, self.img_H//8, self.img_W//8) 
-
+        self.shape = (4, self.img_H // 8, self.img_W // 8)
 
     def unload_model(self):
         """Unload the model if it exists."""
@@ -39,7 +43,6 @@ class Fitter(BaseBlock):
         del self.model
         del self.sampler
         torch.cuda.empty_cache()
-
 
     def load_model(self):
         """Load the model."""
@@ -52,14 +55,7 @@ class Fitter(BaseBlock):
 
         self.sampler = PLMSSampler(self.model)
 
-    def __call__(self, 
-                 agn,
-                 agn_mask,
-                 cloth,
-                 cloth_mask,
-                 image,
-                 dense_pose):
-        
+    def __call__(self, agn, agn_mask, cloth, cloth_mask, image, dense_pose):
         """Fit cloth"""
         if self.model is None:
             print("Model not loaded. Call load_model() first.")
@@ -91,12 +87,12 @@ class Fitter(BaseBlock):
         self.sampler.model.batch = batch
 
         ts = torch.full((1,), 999, device=z.device, dtype=torch.long)
-        start_code = self.model.q_sample(z, ts)     
+        start_code = self.model.q_sample(z, ts)
 
         samples, _, _ = self.sampler.sample(
             self.num_denoise_steps,
             bs,
-            self.shape, 
+            self.shape,
             c,
             x_T=start_code,
             verbose=False,
@@ -107,10 +103,10 @@ class Fitter(BaseBlock):
         x_samples = self.model.decode_first_stage(samples)
         x_sample_img = tensor2img(x_samples.float())
 
-        return x_sample_img[:,:,::-1]
+        return x_sample_img[:, :, ::-1]
 
     def transform_input(self, raw_in):
-        """Transform the input data into the format required by the model.""" 
+        """Transform the input data into the format required by the model."""
         for k, v in raw_in.items():
             if type(v) is not torch.Tensor:
                 print(f"Warning: {k} is not a torch.Tensor, skipping transformation.")

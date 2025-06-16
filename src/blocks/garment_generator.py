@@ -5,6 +5,7 @@ import re
 import warnings
 
 import torch
+from PIL import Image
 
 from building_blocks.sd3_5.sd3_infer import CONFIGS, SD3Inferencer
 from src.blocks.base_block import BaseBlock
@@ -40,6 +41,10 @@ class GarmentGenerator(BaseBlock):
         self.controlnet = None  # f"{self.model_folder}/controlnets/sd3.5_large_controlnet_canny.safetensors"
 
     def unload_model(self):
+        """Unload the model if it exists."""
+        if not hasattr(self, "inferencer") or self.inferencer is not None:
+            raise RuntimeError("Germent generator is not loaded. Can not unload.")
+
         del self.inferencer
         logger.info("GarmentGenerator model unloaded.")
 
@@ -90,7 +95,7 @@ class GarmentGenerator(BaseBlock):
         init_image=None,
         denoise=1.0,
         skip_layer_config=None,
-    ):
+    ) -> list[Image.Image]:
         config = CONFIGS.get(os.path.splitext(os.path.basename(self.model_name))[0], {})
         _steps = steps or config.get("steps", 50)
         _cfg = cfg or config.get("cfg", 5)
@@ -111,7 +116,7 @@ class GarmentGenerator(BaseBlock):
 
         os.makedirs(out_dir, exist_ok=False)
 
-        self.inferencer.gen_image(
+        imgs = self.inferencer.gen_image(
             prompts,
             width,
             height,
@@ -126,3 +131,4 @@ class GarmentGenerator(BaseBlock):
             denoise,
             skip_layer_config,
         )
+        return imgs

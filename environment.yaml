@@ -1,4 +1,4 @@
-name: stylo
+name: stylo2
 channels:
   - pytorch
   - anaconda
@@ -19,7 +19,7 @@ dependencies:
       - albumentations
       - transformers==4.33.2
       - xformers==0.0.19
-      - triton==2.0.0
+      - triton
       - open-clip-torch==2.19.0
       - diffusers==0.20.2
       - scipy
@@ -39,3 +39,4 @@ dependencies:
       - datasets==2.18.0
       - jupyterlab==4.1.6
       - transparent-background==1.2.12
+

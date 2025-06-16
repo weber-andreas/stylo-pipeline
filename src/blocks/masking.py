@@ -1,9 +1,10 @@
-import torch
-from PIL import Image
 import numpy as np
-from lang_sam import LangSAM
-from src.blocks.base_block import BaseBlock
 import torch
+from lang_sam import LangSAM
+from PIL import Image
+
+from src.blocks.base_block import BaseBlock
+
 
 class Masking(BaseBlock):
     """Base class for fitting models."""
@@ -20,16 +21,14 @@ class Masking(BaseBlock):
             print("Lang Sam not laoded. Won't unload.")
             return
 
-        #del self.predictor
+        # del self.predictor
         del self.lang_sam
         torch.cuda.empty_cache()
 
-
     def load_model(self):
         """Load the model."""
-        print('Create/load Sam Predictor...')
+        print("Create/load Sam Predictor...")
         self.lang_sam = LangSAM()
-
 
     def __call__(self, img):
         """
@@ -39,23 +38,23 @@ class Masking(BaseBlock):
         if self.lang_sam is None:
             print("LangSam not loaded. Call load_model() first.")
             return None
-        
+
         image_pil = Image.open(img).convert("RGB")
         image_tensor = torch.from_numpy(np.array(image_pil)).permute(2, 0, 1) / 255
 
         text_prompt_person = "person."
         results = self.lang_sam.predict([image_pil], [text_prompt_person])
         person_mask = results[0]["masks"][0]
-        
+
         text_prompt_pants = "pants."
         results = self.lang_sam.predict([image_pil], [text_prompt_pants])
         pants_mask = results[0]["masks"][0]
-        
+
         text_prompt_shirt = "shirt."
         results = self.lang_sam.predict([image_pil], [text_prompt_shirt])
         shirt_mask = results[0]["masks"][0]
 
-        #should be two hands
+        # should be two hands
         text_prompt_hand = "hand."
         results = self.lang_sam.predict([image_pil], [text_prompt_hand])
         hand_mask = results[0]["masks"][0]
@@ -64,7 +63,7 @@ class Masking(BaseBlock):
         text_prompt_face = "face"
         results = self.lang_sam.predict([image_pil], [text_prompt_face])
         face_mask = results[0]["masks"][0]
-        
+
         text_prompt_hair = "hair"
         results = self.lang_sam.predict([image_pil], [text_prompt_hair])
         hair_mask = results[0]["masks"][0]
@@ -80,7 +79,7 @@ class Masking(BaseBlock):
         face_mask = torch.from_numpy(face_mask).unsqueeze(0)
         hair_mask = torch.from_numpy(hair_mask).unsqueeze(0)
         neck_mask = torch.from_numpy(neck_mask).unsqueeze(0)
-        
+
         mask = torch.clone(person_mask)
         mask[pants_mask > 0] = 0
         mask[hand_mask > 0] = 0
@@ -89,6 +88,5 @@ class Masking(BaseBlock):
 
         agn_mask = torch.clone(image_tensor)
         agn_mask[:, mask[0] > 0] = 0.5
-        
+
         return image_tensor, person_mask, agn_mask, mask
-       

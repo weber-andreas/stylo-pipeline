@@ -40,6 +40,6 @@ huggingface-cli download stabilityai/stable-diffusion-3.5-medium --local-dir bui
 
 ### Python Environent
 ```
-conda env create -f environment.yaml
+conda env update -f environment.yaml
 conda activate stylo-pipeline
 ```

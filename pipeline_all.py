@@ -1,14 +1,18 @@
 import logging
 import os
+import sys
+
+sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
 
 import matplotlib.pyplot as plt
 import torch
-from PIL import Image
 
-# from src.blocks.background_removal import BackgroundRemover
+from src.blocks.background_removal import BackgroundRemover
 from src.blocks.dense_pose import DensePose
 from src.blocks.fitter import Fitter
+from src.blocks.harmonizer import Harmonizer
 from src.blocks.masking import Masking
+from src.utilities import image_utils
 from src.utilities.path_utils import validate_paths_exist
 
 logger = logging.getLogger(__name__)
@@ -16,6 +20,9 @@ logger.setLevel(logging.INFO)
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
 torch.cuda.empty_cache()
+
+# DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE = "cuda"
 
 
 def main():
@@ -30,16 +37,6 @@ def main():
     # load_cloth
     if not validate_paths_exist(paths):
         return
-
-    #### Background Removal ####
-    # gb_remover = BackgroundRemover()
-    # gb_remover.load_model(device="cuda")
-    # img = Image.open(img_path).convert("RGB")
-    # imgs = gb_remover(
-    #     img,
-    #     prompt="A professional standing in a modern, well-lit office with minimalist decor and large windows",
-    #     results_dir="results/background_removal",
-    # )
 
     #### Masking and DensePose ####
     cloth = torch.from_numpy(plt.imread(cloth_path)).permute(2, 0, 1)
@@ -58,8 +55,34 @@ def main():
 
     dense_pose_img = dense_pose(img, fullbody)
     print("DensePose image shape:", dense_pose_img.shape)
-
     dense_pose.unload_model()
+
+    #### Background Removal ####
+    print(mask.shape)
+    img_mask = image_utils.tensor_to_image(fullbody)
+    image_utils.save_image(img_mask, "results/background_removal/mask.png")
+
+    bg_remover = BackgroundRemover()
+    bg_remover.load_model(device=DEVICE)
+    # img = Image.open(img_path).convert("RGB")
+    img_pil = image_utils.tensor_to_image(img)
+    imgs = bg_remover(
+        img_pil,
+        prompt="A professional standing in a modern, well-lit office with minimalist decor and large windows, no people",
+        results_dir="results/background_removal",
+        num_images=2,
+        device=DEVICE,
+        subject_mask=img_mask,
+        annotate_images=True,
+    )
+    img = image_utils.image_to_tensor(imgs[0])  # Use the first generated image
+    bg_remover.unload_model()
+
+    #### Harmonize Image ####
+    # harmonizer = Harmonizer()
+    # harmonizer.load_model()
+    # img = harmonizer(img, fullbody)
+    # harmonizer.unload_model()
 
     #### Fit Garment to Person ####
     fitter = Fitter()
