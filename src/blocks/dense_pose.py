@@ -61,10 +61,14 @@ class DensePose(BaseBlock):
 
         labels_vis = (255 * labels_np / labels_np.max()).astype(np.uint8)
 
-        colored_labels = cv2.applyColorMap(labels_vis, cv2.COLORMAP_HSV)
+        colored_labels = cv2.applyColorMap(labels_vis, cv2.COLORMAP_PARULA)
+
+        colored = np.copy(colored_labels)
+        colored[:, :, 0] = colored_labels[:, :, 2]
+        colored[:, :, 2] = colored_labels[:, :, 0]
 
         resized = cv2.resize(
-            colored_labels, (box_w, box_h), interpolation=cv2.INTER_NEAREST
+            colored, (box_w, box_h), interpolation=cv2.INTER_NEAREST
         )
 
         full = np.zeros((h_orig, w_orig, 3), dtype=np.uint8)

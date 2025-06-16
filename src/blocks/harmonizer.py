@@ -37,11 +37,11 @@ class Harmonizer(BaseBlock):
             print("Harmonizer not loaded. Call load_model() first.")
             return None
         
-        img = img.unsqueeze_(0)  # Add batch dimension
-        mask = mask.unsqueeze_(0)
+        img = img.cuda()  # Add batch dimension
+        mask = mask.cuda()
         with torch.no_grad():
             arguments = self.harmonizer.predict_arguments(img, mask)
             harmonized = self.harmonizer.restore_image(img, mask, arguments)[-1]
-        return harmonized
+        return harmonized.squeeze().cpu()
 
         

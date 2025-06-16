@@ -56,6 +56,7 @@ class BackgroundRemover(BaseBlock):
         num_images=2,
         device="cuda",
         annotate_images=False,
+        save_background=False,
     ) -> list[Image.Image]:
         if not hasattr(self, "diffusion_pipeline") or self.diffusion_pipeline is None:
             raise RuntimeError("Background Diffusion is not loaded.")
@@ -110,8 +111,9 @@ class BackgroundRemover(BaseBlock):
                     font_size=15,
                     color=(255, 255, 255),
                 )
-            image_utils.save_image(
-                image, os.path.join(results_dir, f"background_image_{i}.png")
-            )
+            if save_background:
+                image_utils.save_image(
+                    image, os.path.join(results_dir, f"background_image_{i}.png")
+                )
 
         return images

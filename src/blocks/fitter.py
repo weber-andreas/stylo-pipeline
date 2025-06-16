@@ -3,6 +3,7 @@ import sys
 
 import torch
 from omegaconf import OmegaConf
+import numpy as np
 
 from building_blocks.StableVITON.cldm.model import create_model
 from building_blocks.StableVITON.cldm.plms_hacked import PLMSSampler
@@ -55,19 +56,23 @@ class Fitter(BaseBlock):
 
         self.sampler = PLMSSampler(self.model)
 
-    def __call__(self, agn, agn_mask, cloth, cloth_mask, image, dense_pose):
+    def __call__(self, agn_mask, cloth, cloth_mask, image, dense_pose):
         """Fit cloth"""
         if self.model is None:
             print("Model not loaded. Call load_model() first.")
             return None
 
+
+        mask = agn_mask
+        agn = torch.clone(image)
+        agn[:, mask.squeeze() > 0] = 0.5
         raw_in = dict(
-            agn=agn,
-            agn_mask=agn_mask,
-            cloth=cloth,
+            agn=agn * 2 -1,
+            agn_mask=1 - agn_mask,
+            cloth=cloth * 2 - 1,
             cloth_mask=cloth_mask,
-            image=image,
-            image_densepose=dense_pose,
+            image=image * 2 - 1,
+            image_densepose=dense_pose * 2 - 1,
         )
 
         batch = self.transform_input(raw_in)
@@ -101,9 +106,13 @@ class Fitter(BaseBlock):
         )
 
         x_samples = self.model.decode_first_stage(samples)
-        x_sample_img = tensor2img(x_samples.float())
+        x_sample_img = tensor2img(x_samples.float())[:, :, ::-1]
 
-        return x_sample_img[:, :, ::-1]
+        result = np.copy(x_sample_img)
+        result[:, :, 0] = x_sample_img[:, :, 2]
+        result[:, :, 2] = x_sample_img[:, :, 0]
+        return result
+        #return x_sample_img[:, :, ::-1]
 
     def transform_input(self, raw_in):
         """Transform the input data into the format required by the model."""
