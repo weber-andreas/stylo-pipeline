@@ -39,6 +39,7 @@ class GarmentGenerator(BaseBlock):
         # only required for SD3.5_large
         self.vae_file = None  # f"{self.model_folder}/sd3_vae.safetensors"
         self.controlnet = None  # f"{self.model_folder}/controlnets/sd3.5_large_controlnet_canny.safetensors"
+        self.is_loaded = False
 
     def unload_model(self):
         """Unload the model if it exists."""
@@ -47,6 +48,7 @@ class GarmentGenerator(BaseBlock):
 
         del self.inferencer
         logger.info("GarmentGenerator model unloaded.")
+        self.is_loaded = False
 
     @torch.no_grad()
     def load_model(
@@ -77,6 +79,7 @@ class GarmentGenerator(BaseBlock):
             f"GarmentGenerator model loaded: {self.model_name}, "
             f"ControlNet: {controlnet_ckpt if use_controlnet else 'None'}"
         )
+        self.is_loaded = True
 
     @torch.no_grad()
     def __call__(

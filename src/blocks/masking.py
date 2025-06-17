@@ -4,7 +4,10 @@ from lang_sam import LangSAM
 from PIL import Image
 
 from src.blocks.base_block import BaseBlock
+import logging
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class Masking(BaseBlock):
     """Base class for fitting models."""
@@ -14,21 +17,23 @@ class Masking(BaseBlock):
         self.checkpoint = "./building_blocks/sam/checkpoints/sam2.1_hiera_tiny.pt"
         self.model_cfg = "./building_blocks/sam/configs/sam2.1/sam2.1_hiera_t.yaml"
         self.lang_sam = None
+        self.is_loaded = False
 
     def unload_model(self):
         """Unload the model if it exists."""
         if self.lang_sam == None:
-            print("Lang Sam not laoded. Won't unload.")
+            logger.info("Lang Sam not loaded. Won't unload.")
             return
 
         # del self.predictor
         del self.lang_sam
         torch.cuda.empty_cache()
+        self.is_loaded = False
 
     def load_model(self):
         """Load the model."""
-        print("Create/load Sam Predictor...")
         self.lang_sam = LangSAM()
+        self.is_loaded = True
 
     def __call__(self, img):
         """
@@ -36,11 +41,13 @@ class Masking(BaseBlock):
         Return (img, full_body, agn_mask, mask)
         """
         if self.lang_sam is None:
-            print("LangSam not loaded. Call load_model() first.")
+            logger.error("LangSam not loaded. Call load_model() first.")
             return None
 
-        image_pil = Image.open(img).convert("RGB")
-        image_tensor = torch.from_numpy(np.array(image_pil)).permute(2, 0, 1) / 255
+        #image_pil = Image.open(img).convert("RGB")
+        #image_tensor = torch.from_numpy(np.array(image_pil)).permute(2, 0, 1) / 255
+        image_pil = Image.fromarray((img.permute(1, 2, 0) * 255).byte().cpu().numpy())
+        image_tensor = img
 
         text_prompt_person = "person."
         results = self.lang_sam.predict([image_pil], [text_prompt_person])

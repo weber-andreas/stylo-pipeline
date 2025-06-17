@@ -34,6 +34,7 @@ class Fitter(BaseBlock):
         self.sampler = None
 
         self.shape = (4, self.img_H // 8, self.img_W // 8)
+        self.is_loaded = False
 
     def unload_model(self):
         """Unload the model if it exists."""
@@ -44,6 +45,7 @@ class Fitter(BaseBlock):
         del self.model
         del self.sampler
         torch.cuda.empty_cache()
+        self.is_loaded = False
 
     def load_model(self):
         """Load the model."""
@@ -55,6 +57,7 @@ class Fitter(BaseBlock):
         self.model.eval()
 
         self.sampler = PLMSSampler(self.model)
+        self.is_loaded = True
 
     def __call__(self, agn_mask, cloth, cloth_mask, image, dense_pose):
         """Fit cloth"""

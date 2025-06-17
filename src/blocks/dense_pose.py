@@ -26,6 +26,7 @@ class DensePose(BaseBlock):
             "./building_blocks/detectron2/model_final_162be9.pkl"  # downloaded model
         )
         self.cfg.MODEL.DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+        self.is_loaded = False
 
     def unload_model(self):
         """Unload the model if it exists."""
@@ -35,11 +36,14 @@ class DensePose(BaseBlock):
 
         del self.predictor
         torch.cuda.empty_cache()
+        self.is_loaded = False
+
 
     def load_model(self):
         """Load the model."""
         print("Create/load DensePose Predictor...")
         self.predictor = DefaultPredictor(self.cfg)
+        self.is_loaded = True
 
     def __call__(self, image, full_body):
         image_np = (image.permute(1, 2, 0).numpy() * 255).astype("uint8")

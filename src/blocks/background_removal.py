@@ -24,6 +24,7 @@ class BackgroundRemover(BaseBlock):
         self.model_name = "yahoo-inc/photo-background-generation"
         self.remover: Remover | None = None
         self.diffusion_pipeline: DiffusionPipeline | None = None
+        self.is_loaded = False
 
     def unload_model(self):
         """Unload the model if it exists."""
@@ -34,6 +35,7 @@ class BackgroundRemover(BaseBlock):
         if hasattr(self, "remover") and self.remover is not None:
             del self.remover
             logger.info("Background Remover model unloaded.")
+        self.is_loaded = False
 
     def load_model(self, device="cuda", with_masking=True):
         """Load the model"""
@@ -47,13 +49,14 @@ class BackgroundRemover(BaseBlock):
         )
         self.diffusion_pipeline = self.diffusion_pipeline.to(device)
         logger.info("Diffusion pipeline for background removal loaded successfully.")
+        self.is_loaded = True
 
     def __call__(
         self,
         img,
         prompt: str,
-        results_dir: str,
         subject_mask,
+        results_dir=None,
         num_images=2,
         device="cuda",
         annotate_images=False,
@@ -81,9 +84,10 @@ class BackgroundRemover(BaseBlock):
                     font_size=15,
                     color=(255, 255, 255),
                 )
-            image_utils.save_image(
-                subject_mask, os.path.join(results_dir, "foreground_mask.png")
-            )
+            if results_dir is not None:
+                image_utils.save_image(
+                    subject_mask, os.path.join(results_dir, "foreground_mask.png")
+                )
 
         # Background generation
         seed = 13
@@ -114,7 +118,7 @@ class BackgroundRemover(BaseBlock):
                     font_size=15,
                     color=(255, 255, 255),
                 )
-            if save_background:
+            if save_background and results_dir is not None:
                 image_utils.save_image(
                     image, os.path.join(results_dir, f"background_image_{i}.png")
                 )
