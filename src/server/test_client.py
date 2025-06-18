@@ -18,6 +18,7 @@ import json
 import argparse
 from PIL import Image
 import io
+import time
 
 async def send_action(ws, action, **kwargs):
     payload = {"action": action, **kwargs}
@@ -32,7 +33,15 @@ def display_base64_image(b64_str):
 
 async def main(uri):
     async with websockets.connect(uri, max_size=10 * 1024 * 1024) as ws:
+        """async for message in ws:
+            print("Received message:", message)
+            #close connection if server sends a close message
+            if isinstance(message, str) and message.startswith("ERROR: Another client is already connected. Try again later."):
+                print("Server requested close:", message)
+                await ws.close()
+                return"""
         print("Connected to server.")
+        time.sleep(50)
 
         # 1. List available commands
         resp = await send_action(ws, "LIST")

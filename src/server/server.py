@@ -54,7 +54,8 @@ async def _handle_client(ws: WebSocketServerProtocol):
     global _controller
 
     # Reject if another client is already connected
-    if _active_client and _active_client.open:
+    #if _active_client and _active_client.open:
+    if _active_client is not None:
         logger.warning("Refusing new connection: another client is active from %s", _active_client.remote_address)
         await ws.send("ERROR: Another client is already connected. Try again later.")
         await ws.close(code=1013, reason="Service Unavailable")  # 1013 = Try Again Later
@@ -159,6 +160,7 @@ async def _handle_client(ws: WebSocketServerProtocol):
         _controller.unload_all()  # Ensure all blocks are unloaded on error
     finally:
         # Clean up
+        ws.close()
         if _active_client is ws:
             _active_client = None
         logger.info("Client %s disconnected", peer)
