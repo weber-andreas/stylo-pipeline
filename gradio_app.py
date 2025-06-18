@@ -13,10 +13,11 @@ from src.blocks.dense_pose import DensePose
 from src.blocks.fitter import Fitter
 from src.blocks.harmonizer import Harmonizer
 from src.blocks.masking import Masking
-from src.utilities import image_utils, path_utils
+from src.utilities import image_utils
 
 logger = logging.getLogger(__name__)
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE = "cpu"
 
 
 def run(subject_path, cloth_path, cloth_mask_path, background_prompt):
@@ -30,11 +31,12 @@ def run(subject_path, cloth_path, cloth_mask_path, background_prompt):
     #### Masking and DensePose ####
     cloth = torch.from_numpy(plt.imread(cloth_path)).permute(2, 0, 1) / 255.0
     cloth_mask = torch.from_numpy(plt.imread(cloth_mask_path)).unsqueeze(0) / 255.0
+    subject = torch.from_numpy(plt.imread(subject_path)).permute(2, 0, 1) / 255.0
 
     #### Mask LangSam ####
     masking = Masking()
     masking.load_model()
-    img, fullbody, agn, mask = masking(subject_path)
+    img, fullbody, agn, mask = masking(subject)
     masking.unload_model()
 
     #### Dense Pose ####

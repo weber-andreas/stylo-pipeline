@@ -42,11 +42,12 @@ def main():
     #### Masking and DensePose ####
     cloth = torch.from_numpy(plt.imread(cloth_path)).permute(2, 0, 1) / 255.0
     cloth_mask = torch.from_numpy(plt.imread(cloth_mask_path)).unsqueeze(0) / 255.0
+    subject_img = torch.from_numpy(plt.imread(img_path)).permute(2, 0, 1) / 255.0
 
     #### Mask LangSam ####
     masking = Masking()
     masking.load_model()
-    img, fullbody, agn, mask = masking(img_path)
+    img, fullbody, agn, mask = masking(subject_img)
     print(img.shape)
     print(fullbody.shape)
     print(mask.shape)
@@ -69,7 +70,7 @@ def main():
         device=DEVICE,
         subject_mask=fullbody,
         annotate_images=False,
-        save_background=False
+        save_background=False,
     )
     bg_remover.unload_model()
 

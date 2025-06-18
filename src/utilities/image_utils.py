@@ -1,5 +1,6 @@
 import io
 import logging
+import os
 
 import requests
 import torch
@@ -50,6 +51,11 @@ def image_to_tensor(image: Image.Image) -> torch.Tensor:
 
 
 def save_image(image: Image.Image, filename: str):
+    directory = os.path.dirname(filename)
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory)
+        logger.info(f"Created directory: {directory}")
+
     image.save(filename)
     logger.info(f"Image saved as {filename}")
 
