@@ -139,7 +139,6 @@ async def _handle_client(ws: WebSocketServerProtocol):
 
                 case "fit":
                     fitted_img = _controller.fit_garment()
-                    print("fitted_img:", fitted_img)
                     if type(fitted_img) is str:
                         logger.error("Garment fitting failed: %s", fitted_img)
                         await ws.send(build_response_str("fit", "error", message=fitted_img))
