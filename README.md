@@ -47,7 +47,7 @@ Most of the model weights are available on huggingface.
 #### Stable-Diffusion 3.5
 ```sh
 huggingface-cli login
-huggingface-cli download stabilityai/stable-diffusion-3.5-medium --local-dir building_blocks/sd3_5
+huggingface-cli download stabilityai/stable-diffusion-3.5-medium --local-dir building_blocks/sd3_5/models/3_5medium
 ```
 
 ### Python Environent
