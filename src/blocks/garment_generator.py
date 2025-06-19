@@ -62,7 +62,7 @@ class GarmentGenerator(BaseBlock):
         _shift = config.get("shift", 3)
 
         controlnet_ckpt = self.controlnet if use_controlnet else None
-
+        self.inferencer = SD3Inferencer()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=FutureWarning)
             # load weights to the inferencer
