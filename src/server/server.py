@@ -61,13 +61,18 @@ async def _handle_client(ws: WebSocketServerProtocol):
     #if _active_client and _active_client.open:
     if _active_client is not None:
         logger.warning("Refusing new connection: another client is active from %s", _active_client.remote_address)
-        await ws.send("ERROR: Another client is already connected. Try again later.")
+
+        error_connect_response = build_response_str("connect", "error", "Another client is already connected. Try again later.")
+        await ws.send(error_connect_response)
         await ws.close(code=1013, reason="Service Unavailable")  # 1013 = Try Again Later
         return
 
     _active_client = ws  # register this client
     peer = ws.remote_address
     logger.info("Client %s connected", peer)
+
+    succ_connect_response = build_response_str("connect", "success", "Successfull connection!")
+    await ws.send(succ_connect_response)
 
     try:
         async for message in ws:
@@ -168,6 +173,10 @@ async def _handle_client(ws: WebSocketServerProtocol):
                     await ws.send(build_response_str("fit", "success", "Garment fitting completed successfully.", tensor_to_base64_png(fitted_img)))
                     logger.info("Garment fitting completed and sent to %s", peer)
                     continue
+
+                case "rating":
+                    
+
                     
                 case default:
                     logger.error("Unkown action: %s", action)
