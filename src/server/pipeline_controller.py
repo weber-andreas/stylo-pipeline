@@ -196,12 +196,9 @@ class PipelineController():
         self.load_block(self.garment_generator, device=self.device)
 
         #build promt:
-        prompt = prompt + " neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m"
-        garment = self.garment_generator(prompt=prompt, out_dir="./src/server/cloth_out_dir")[0]
-
         image_size = self.image_cache["stock_image"][0].shape
-        resize = transforms.Resize(image_size)
-        garment = resize(garment)
+        prompt = prompt + " neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m"
+        garment = self.garment_generator(prompt=prompt, out_dir="./src/server/cloth_out_dir", height=image_size[0], width=image_size[1])[0]
 
         self.image_cache["cloth_image"] = garment
 

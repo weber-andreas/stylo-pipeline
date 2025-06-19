@@ -89,7 +89,7 @@ class GarmentGenerator(BaseBlock):
         out_dir: str,
         postfix=None,
         width=1024,
-        height=1024,
+        height=768,
         steps=40,
         cfg=CONFIGS,
         sampler="dpmpp_2m",
