@@ -240,7 +240,9 @@ class PipelineController():
             self.dense_pose_gen()
 
     def save_rating(self, rating_json, fields, peer):
-        rating_json = json.loads(rating_json)
+        if type(rating_json) == str:
+            rating_json = json.loads(rating_json)
+
         fields = ["peer", "time"] + fields
         rating_json["peer"] = peer
         rating_json["time"] = time.time()
