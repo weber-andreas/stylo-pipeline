@@ -1,6 +1,7 @@
 import logging
 from csv import DictWriter
 import time
+from torchvision import transforms
 import json
 
 from src.blocks.background_removal import BackgroundRemover
@@ -196,9 +197,13 @@ class PipelineController():
 
         #build promt:
         prompt = prompt + " neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m"
-        garment = self.garment_generator(prompt=prompt, out_dir="./src/server/cloth_out_dir")
+        garment = self.garment_generator(prompt=prompt, out_dir="./src/server/cloth_out_dir")[0]
 
-        self.image_cache["cloth_image"] = garment[0]
+        image_size = self.image_cache["stock_image"][0].shape
+        resize = transforms.Resize(image_size)
+        garment = resize(garment)
+
+        self.image_cache["cloth_image"] = garment
 
         self.unload_block(self.garment_generator)
 
@@ -242,7 +247,7 @@ class PipelineController():
         fields = ["peer", "time"] + fields
         rating_json["peer"] = peer
         rating_json["time"] = time.time()
-
+    
         with open(self.rating_file, 'a') as f:
             writer = DictWriter(f, fieldnames=fields)
             writer.writerow(rating_json)

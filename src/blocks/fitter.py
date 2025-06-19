@@ -64,17 +64,6 @@ class Fitter(BaseBlock):
         if self.model is None:
             print("Model not loaded. Call load_model() first.")
             return None
-        from torchvision import transforms
-        resize = transforms.Resize((1024, 768))
-        print("agn_mask", agn_mask.shape)
-        print("cloth", cloth.shape)
-        print("cloth_mask", cloth_mask.shape)
-
-        cloth = resize(cloth)
-        cloth_mask = resize(cloth_mask)
-        print("image", image.shape)
-        print("dense_pose", dense_pose.shape)
-
         mask = agn_mask
         agn = torch.clone(image)
         agn[:, mask.squeeze() > 0] = 0.5
