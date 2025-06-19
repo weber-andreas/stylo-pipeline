@@ -175,17 +175,17 @@ async def _handle_client(ws: WebSocketServerProtocol):
                     continue
 
                 case "rating":
-                    if "raiting" not in request:
-                        logger.error("Missing 'raiting' field in rating.")
-                        await ws.send(build_response_str("raiting", "error", message="Missing 'raiting' field in rating."))
+                    if "rating" not in request:
+                        logger.error("Missing 'rating' field in rating.")
+                        await ws.send(build_response_str("rating", "error", message="Missing 'rating' field in rating."))
                         continue
-                    fields = ['IP', 'TIME', 'M1', 'M2', 'M3']
+                    fields = ['usability', 'customizability', 'overall_quality', 'background_quality', "garment_generation_quality", 'fitting_quality']
                     for f in fields:
-                        if f not in request["raiting"]:
+                        if f not in request["rating"]:
                             logger.error("Missing '" + f + "' field in rating.")
                             await ws.send(build_response_str("rating", "error", message="Missing '" + f + "' field in rating."))
                             continue
-                    _controller.save_rating(request["rating"], fields)
+                    _controller.save_rating(request["rating"], fields, peer)
 
                 case default:
                     logger.error("Unkown action: %s", action)

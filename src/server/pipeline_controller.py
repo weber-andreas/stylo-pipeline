@@ -1,5 +1,8 @@
 import logging
 from csv import DictWriter
+import time
+import json
+
 from src.blocks.background_removal import BackgroundRemover
 from src.blocks.dense_pose import DensePose
 from src.blocks.fitter import Fitter
@@ -234,7 +237,12 @@ class PipelineController():
             logger.info("Auto-generated masks successfully.")
             self.dense_pose_gen()
 
-    def save_rating(self, rating_json, fields):
+    def save_rating(self, rating_json, fields, peer):
+        rating_json = json.loads(rating_json)
+        fields = ["peer", "time"] + fields
+        rating_json["peer"] = peer
+        rating_json["time"] = time.time()
+
         with open(self.rating_file, 'a') as f:
             writer = DictWriter(f, fieldnames=fields)
             writer.writerow(rating_json)
