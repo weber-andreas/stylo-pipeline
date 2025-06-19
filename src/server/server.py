@@ -152,8 +152,10 @@ async def _handle_client(ws: WebSocketServerProtocol):
                         
                     prompt = request["prompt"]
                     logger.info("Garment design requested with prompt: %s", prompt)
-                    garment = _controller.design_garment(prompt, auto=True)[0]
+                    garment = _controller.design_garment(prompt, auto=True)
 
+                    print(garment)
+                    print(garment.shape)
                     if type(garment) is str:
                         logger.error("Garment design failed: %s", garment)
                         await ws.send(build_response_str("design", "error", garment))
