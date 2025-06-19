@@ -29,10 +29,10 @@ async def send_action(ws, action, **kwargs):
 def display_base64_image(b64_str):
     img_data = base64.b64decode(b64_str)
     img = Image.open(io.BytesIO(img_data))
-    img.save("src/server/example_transfers.png")
+    img.save("src/server/example_transfers/example_transfers_" + str(time.time()) + ".png")
 
 async def main(uri):
-    async with websockets.connect(uri, max_size=10 * 1024 * 1024) as ws:
+    async with websockets.connect(uri, max_size=10 * 1024 * 1024, ping_interval=None) as ws:
         """async for message in ws:
             print("Received message:", message)
             #close connection if server sends a close message
@@ -40,9 +40,8 @@ async def main(uri):
                 print("Server requested close:", message)
                 await ws.close()
                 return"""
+        
         print("Connected to server.")
-        time.sleep(50)
-
         # 1. List available commands
         resp = await send_action(ws, "LIST")
         print("Server LIST Response:", resp)
@@ -59,11 +58,14 @@ async def main(uri):
         if "image" in resp:
             display_base64_image(resp["image"])
 
+        # 4. Design garment
+        resp = await send_action(ws, "DESIGN", prompt="A white polo shirt with red stripes on the collar and sleeve cuff")
+
         # 4. Fit garment
         resp = await send_action(ws, "FIT")
         print("Fit response:", resp)
-        #if "image" in resp:
-        #    display_base64_image(resp["image"])
+        if "image" in resp:
+            display_base64_image(resp["image"])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

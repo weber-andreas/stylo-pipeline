@@ -25,6 +25,9 @@ conda activate stylo2
 conda env update -f environment.yaml
 ```
 
+# fix foreground BF16 error
+replace line 163 in Remover: pred = pred.float().numpy().squeeze()
+
 
 ### Add Foundation Model Repositories to this Codebase
 1. Fork repository of foundation model

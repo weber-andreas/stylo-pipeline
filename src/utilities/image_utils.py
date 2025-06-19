@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def resize_with_padding(img, expected_size):
     img.thumbnail((expected_size[0], expected_size[1]))
-    # print(img.size)
+
     delta_width = expected_size[0] - img.size[0]
     delta_height = expected_size[1] - img.size[1]
     pad_width = delta_width // 2
@@ -31,7 +31,7 @@ def tensor_to_image(tensor: torch.Tensor) -> Image.Image:
     Convert a PyTorch tensor to a PIL Image.
     The tensor should be in the format (C, H, W) and normalized to [0, 1].
     """
-    if tensor.dim() != 3 or tensor.size(0) not in [1, 3]:
+    if tensor.dim() != 3 or tensor.shape[0] not in [1, 3]:
         raise ValueError("Input tensor must be of shape (C, H, W) with C=1 or C=3.")
 
     to_pil = transforms.ToPILImage()

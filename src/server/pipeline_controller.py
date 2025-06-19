@@ -4,11 +4,13 @@ from src.blocks.dense_pose import DensePose
 from src.blocks.fitter import Fitter
 from src.blocks.harmonizer import Harmonizer
 from src.blocks.masking import Masking
+from src.blocks.foreground_masking import ForegroundMasking
+from src.blocks.garment_generator import GarmentGenerator
 
 logger = logging.getLogger(__name__)
 
 class PipelineController():
-    def __init__(self):
+    def __init__(self, device="cuda"):
         logger.info("Initializing PipelineController...")
         # Initialize all blocks
         logger.info("Init blocks...")
@@ -17,9 +19,12 @@ class PipelineController():
         self.background_remover = BackgroundRemover()
         self.harmonizer = Harmonizer()
         self.fitter = Fitter()
+        self.cloth_masking = ForegroundMasking()
+        self.garment_generator = GarmentGenerator(device=device)
 
         logger.info("Init cache")
         # Initialize image cache
+        self.device = device
         self.loaded_blocks = []
         self.image_cache = {
             "stock_image": None,
@@ -35,7 +40,7 @@ class PipelineController():
         }
         logger.info("PipelineController initialized.")
 
-    def load_block(self, block):
+    def load_block(self, block, device=None):
         if not block.is_loaded:
             block.load_model()
             self.loaded_blocks.append(block)
@@ -148,10 +153,10 @@ class PipelineController():
             return "Cloth mask not set. Please set the cloth mask first."
         if self.image_cache["harmonized_image"] is None:
             return "Harmonized image not set. Please harmonize the image first."
-        if not self.image_cache["dense_pose"] is None:
+        if self.image_cache["dense_pose"] is None:
             return "Dense pose not set. Please generate the dense pose first."
 
-        self.load_block(self.fitter)
+        self.load_block(self.fitter, device=self.device)
 
         fitted_img = self.fitter(
             agn_mask=self.image_cache["agn_mask"],
@@ -166,11 +171,57 @@ class PipelineController():
 
         self.unload_block(self.fitter)
         return fitted_img
+    
+    def get_cloth_mask(self):
+        logger.info("Generating foreground mask...")
+        if self.image_cache["cloth_image"] is None:
+            return "Cloth image not set. Please set the stock image first."
+        
+        self.load_block(self.cloth_masking)
+
+        foreground_mask = self.cloth_masking(self.image_cache["cloth_image"])
+
+        self.image_cache["cloth_mask"] = foreground_mask
+
+        self.unload_block(self.cloth_masking)
+        return foreground_mask
+
+    def design_garment(self, prompt, auto=False):
+        self.load_block(self.garment_generator, device=self.device)
+
+        #build promt:
+        prompt = prompt + " neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m"
+        garment = self.garment_generator(prompt=prompt, out_dir="./src/server/cloth_out_dir")
+
+        self.image_cache["cloth_image"] = garment[0]
+
+        self.unload_block(self.garment_generator)
+
+        if auto:
+            logger.info("Auto-generating cloth masks after garment design...")
+            self.get_cloth_mask()
+            logger.info("Auto-generated cloth masks successfully.")
+
+        return garment
+
 
     def set_stock_image(self, img, auto=False):
         """
         Set the stock image for the pipeline.
         """
+        logger.info("Reset cache...")
+        self.image_cache = {
+            "stock_image": None,
+            "fullbody_mask": None,
+            "agn_image": None,
+            "agn_mask": None,
+            "cloth_image": None,
+            "cloth_mask": None,
+            "dense_pose": None,
+            "fitted_image": None,
+            "harmonized_image": None,
+            "background_removed_image": None,
+        }
         logger.info("Setting stock image...")
         self.image_cache["stock_image"] = img
         logger.info("Stock image set successfully.")

@@ -9,6 +9,7 @@ from PIL import Image
 
 from building_blocks.sd3_5.sd3_infer import CONFIGS, SD3Inferencer
 from src.blocks.base_block import BaseBlock
+import src.utilities.image_utils as image_utils
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,8 @@ class GarmentGenerator(BaseBlock):
     Generates garments via Stable Diffusion 3.5
     """
 
-    def __init__(self):
+    def __init__(self, device):
+        self.device = device
         self.model_folder = "building_blocks/sd3_5/models"
         self.inferencer = SD3Inferencer()
         self.model_name = f"{self.model_folder}/sd3_medium.safetensors"  # "models/sd3-large/sd3.5_large.safetensors"
@@ -43,18 +45,17 @@ class GarmentGenerator(BaseBlock):
 
     def unload_model(self):
         """Unload the model if it exists."""
-        if not hasattr(self, "inferencer") or self.inferencer is not None:
-            raise RuntimeError("Germent generator is not loaded. Can not unload.")
+        if self.inferencer is not None:
+            logger.info("Unloading GarmentGenerator model...")
+            del self.inferencer
 
-        del self.inferencer
-        logger.info("GarmentGenerator model unloaded.")
+        torch.cuda.empty_cache()
         self.is_loaded = False
 
     @torch.no_grad()
     def load_model(
         self,
         use_controlnet=False,
-        device="cuda",
         verbose=False,
     ):
         config = CONFIGS.get(os.path.splitext(os.path.basename(self.model_name))[0], {})
@@ -71,7 +72,7 @@ class GarmentGenerator(BaseBlock):
                 _shift,
                 controlnet_ckpt,
                 self.model_folder,
-                device,
+                self.device,
                 verbose,
                 load_tokenizers=True,
             )
@@ -98,7 +99,7 @@ class GarmentGenerator(BaseBlock):
         init_image=None,
         denoise=1.0,
         skip_layer_config=None,
-    ) -> list[Image.Image]:
+    ) -> list[torch.Tensor]:
         config = CONFIGS.get(os.path.splitext(os.path.basename(self.model_name))[0], {})
         _steps = steps or config.get("steps", 50)
         _cfg = cfg or config.get("cfg", 5)
@@ -134,4 +135,8 @@ class GarmentGenerator(BaseBlock):
             denoise,
             skip_layer_config,
         )
-        return imgs
+
+        #image to torch
+        images = [image_utils.image_to_tensor(img) for img in imgs]
+        print("shape of images:", [img.shape for img in images])
+        return images

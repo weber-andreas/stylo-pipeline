@@ -29,11 +29,13 @@ import os
 import sys
 
 sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
+sys.path.insert(0, os.path.abspath("./building_blocks/sd3_5"))
 
 import argparse
 import asyncio
 import json
 from pathlib import Path
+import torch
 
 from src.server.pipeline_controller import PipelineController
 from src.server.utils import build_response_str, decode_tensor_from_json, tensor_to_base64_png
@@ -45,7 +47,8 @@ logging.basicConfig(level=logging.INFO)
 
 # --------------------------- Global state ---------------------------------- #
 _active_client: WebSocketServerProtocol | None = None  # currently connected client
-_controller: PipelineController = PipelineController()
+device = "cpu"
+_controller: PipelineController = PipelineController(device=device)
 
 # ------------------------- Helper functions -------------------------------- #
 
@@ -84,6 +87,8 @@ async def _handle_client(ws: WebSocketServerProtocol):
 
             action = request["action"].lower().strip()
 
+            logger.info("Current vram usage before request: %s GB", round(torch.cuda.memory_allocated() / 1024**3, 2))
+
             logger.info("recieved action: %s", action)
             match action:
                 case "list":
@@ -118,13 +123,13 @@ async def _handle_client(ws: WebSocketServerProtocol):
 
                     logger.info("Background removal requested with prompt: %s", prompt)
                     bg_rm_result = _controller.remove_background(prompt)
-                    if bg_rm_result is str:
+                    if type(bg_rm_result) is str:
                         logger.error("Background removal failed: %s", bg_rm_result)
                         await ws.send(build_response_str("background", "error", bg_rm_result))
                         continue
 
                     harmonized_img = _controller.harmonize_image()
-                    if harmonized_img is str:
+                    if type(harmonized_img) is str:
                         logger.error("Image harmonization failed: %s", harmonized_img)
                         await ws.send(build_response_str("harmonize", "error", harmonized_img))
                         continue
@@ -134,8 +139,22 @@ async def _handle_client(ws: WebSocketServerProtocol):
                     continue
                 
                 case "design":
-                    logger.error("Design not yet implemented.")
-                    await ws.send(build_response_str("design", "error", "Design functionality is not yet implemented."))
+                    if "prompt" not in request:
+                        logger.error("Missing 'prompt' field for designer.")
+                        await ws.send(build_response_str("design", "error", "Missing 'prompt' field for designer."))
+                        continue
+                        
+                    prompt = request["prompt"]
+                    logger.info("Garment design requested with prompt: %s", prompt)
+                    garment = _controller.design_garment(prompt, auto=True)[0]
+
+                    if type(garment) is str:
+                        logger.error("Garment design failed: %s", garment)
+                        await ws.send(build_response_str("design", "error", garment))
+                        continue
+                    
+                    await ws.send(build_response_str("design", "success", "Designed cloth successfully.", tensor_to_base64_png(garment)))
+                    logger.info("Designed garment successfully and sent to %s", peer)
                     continue
 
                 case "fit":
@@ -160,7 +179,7 @@ async def _handle_client(ws: WebSocketServerProtocol):
         _controller.unload_all()  # Ensure all blocks are unloaded on error
     finally:
         # Clean up
-        ws.close()
+        await ws.close()
         if _active_client is ws:
             _active_client = None
         logger.info("Client %s disconnected", peer)
@@ -175,7 +194,7 @@ def main() -> None:
     args = parser.parse_args()
 
     async def startup() -> None:
-        async with serve(lambda ws: _handle_client(ws), args.host, args.port, max_size=10 * 1024 * 1024):
+        async with serve(lambda ws: _handle_client(ws), args.host, args.port, max_size=10 * 1024 * 1024, ping_interval=None):
             logger.info("Server ready on http://%s:%d", args.host, args.port)
             await asyncio.Future()  # run forever
 
@@ -186,4 +205,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    with torch.no_grad():
+        # Ensure that the GPU memory is cleared before starting the server
+        torch.cuda.empty_cache()
+        main()

@@ -23,10 +23,12 @@ class ForegroundMasking(BaseBlock):
 
     def unload_model(self):
         """Unload the model if it exists."""
-        if hasattr(self, "remover") and self.remover is not None:
+        if self.remover is not None:
             del self.remover
             logger.info("Background Remover model unloaded.")
-            self.is_loaded = False
+        
+        torch.cuda.empty_cache()
+        self.is_loaded = False
 
     def load_model(self):
         """Load the model"""
@@ -38,6 +40,7 @@ class ForegroundMasking(BaseBlock):
         self,
         img,
     ) -> torch.Tensor:
+        img = image_utils.tensor_to_image(img.cpu())
         cloth_mask = self.remover.process(img, type="map")
         logger.info("Foreground mask generated successfully.")
         return image_utils.image_to_tensor(cloth_mask)

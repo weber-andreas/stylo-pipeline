@@ -28,13 +28,15 @@ class BackgroundRemover(BaseBlock):
 
     def unload_model(self):
         """Unload the model if it exists."""
-        if hasattr(self, "diffusion_pipeline") and self.diffusion_pipeline is not None:
+        if self.diffusion_pipeline is not None:
             del self.diffusion_pipeline
             logger.info("Background Diffusion model unloaded.")
 
-        if hasattr(self, "remover") and self.remover is not None:
+        if self.remover is not None:
             del self.remover
             logger.info("Background Remover model unloaded.")
+        
+        torch.cuda.empty_cache()
         self.is_loaded = False
 
     def load_model(self, device="cuda", with_masking=True):

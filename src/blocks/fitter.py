@@ -65,7 +65,12 @@ class Fitter(BaseBlock):
             print("Model not loaded. Call load_model() first.")
             return None
 
-
+        print("agn_mask", agn_mask.shape)
+        print("cloth", cloth.shape)
+        print("cloth_mask", cloth_mask.shape)
+        print("image", image.shape)
+        print("dense_pose", dense_pose.shape)
+        
         mask = agn_mask
         agn = torch.clone(image)
         agn[:, mask.squeeze() > 0] = 0.5
