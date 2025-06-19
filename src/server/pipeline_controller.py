@@ -1,4 +1,5 @@
 import logging
+from csv import DictWriter
 from src.blocks.background_removal import BackgroundRemover
 from src.blocks.dense_pose import DensePose
 from src.blocks.fitter import Fitter
@@ -24,6 +25,7 @@ class PipelineController():
 
         logger.info("Init cache")
         # Initialize image cache
+        self.rating_file = "./results/rating_database.csv"
         self.device = device
         self.loaded_blocks = []
         self.image_cache = {
@@ -232,4 +234,7 @@ class PipelineController():
             logger.info("Auto-generated masks successfully.")
             self.dense_pose_gen()
 
-
+    def save_rating(self, rating_json, fields):
+        with open(self.rating_file, 'a') as f:
+            writer = DictWriter(f, fieldnames=fields)
+            writer.writerow(rating_json)
