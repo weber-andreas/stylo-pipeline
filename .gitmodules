@@ -6,7 +6,7 @@
 	url = https://github.com/yahoo/photo-background-generation.git
 [submodule "building_blocks/sd3_5"]
 	path = building_blocks/sd3_5
-	url = https://github.com/Stability-AI/sd3.5.git
+	url = https://github.com/weber-andreas/sd3.5
 [submodule "building_blocks/Harmonizer"]
 	path = building_blocks/Harmonizer
 	url = https://github.com/ZHKKKe/Harmonizer.git

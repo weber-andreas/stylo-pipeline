@@ -30,6 +30,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
 sys.path.insert(0, os.path.abspath("./building_blocks/sd3_5"))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
 import argparse
 import asyncio
