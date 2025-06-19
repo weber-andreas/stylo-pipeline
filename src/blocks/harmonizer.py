@@ -3,6 +3,7 @@ from src.blocks.base_block import BaseBlock
 import torch
 from building_blocks.Harmonizer.src import model
 import logging
+import gc
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,6 +24,7 @@ class Harmonizer(BaseBlock):
             return
 
         del self.harmonizer
+        gc.collect()
         torch.cuda.empty_cache()
         self.is_loaded = False
 

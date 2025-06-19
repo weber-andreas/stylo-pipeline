@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import gc
 
 import torch
 
@@ -36,6 +37,7 @@ class BackgroundRemover(BaseBlock):
             del self.remover
             logger.info("Background Remover model unloaded.")
         
+        gc.collect()
         torch.cuda.empty_cache()
         self.is_loaded = False
 

@@ -49,6 +49,8 @@ async def main(uri):
         # 2. Upload an image
         with open("results/stable_viton_output.png", "rb") as f:
             b64_img = base64.b64encode(f.read()).decode("utf-8")
+        print(b64_img)
+        return
         resp = await send_action(ws, "UPLOAD", image=b64_img)
         print("Upload response:", resp)
 
