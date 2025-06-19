@@ -48,9 +48,6 @@ def main():
     masking = Masking()
     masking.load_model()
     img, fullbody, agn, mask = masking(subject_img)
-    print(img.shape)
-    print(fullbody.shape)
-    print(mask.shape)
     masking.unload_model()
 
     #### Dense Pose ####
@@ -95,7 +92,7 @@ def main():
 
     vis(
         img.permute(1, 2, 0),
-        styled,
+        styled.permute(1, 2, 0),
         title="Stable VITON Input and Output",
         save_path="results/final_output/stable_viton_output.png",
     )

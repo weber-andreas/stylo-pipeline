@@ -64,12 +64,14 @@ class Fitter(BaseBlock):
         if self.model is None:
             print("Model not loaded. Call load_model() first.")
             return None
-
+        from torchvision import transforms
+        resize = transforms.Resize((1024, 768))
         print("agn_mask", agn_mask.shape)
         print("cloth", cloth.shape)
         print("cloth_mask", cloth_mask.shape)
 
-        
+        cloth = resize(cloth)
+        cloth_mask = resize(cloth_mask)
         print("image", image.shape)
         print("dense_pose", dense_pose.shape)
 
@@ -121,7 +123,8 @@ class Fitter(BaseBlock):
         result = np.copy(x_sample_img)
         result[:, :, 0] = x_sample_img[:, :, 2]
         result[:, :, 2] = x_sample_img[:, :, 0]
-        return result
+        result = torch.from_numpy(result)
+        return result.permute(2, 0, 1)
         #return x_sample_img[:, :, ::-1]
 
     def transform_input(self, raw_in):

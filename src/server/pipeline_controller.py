@@ -179,7 +179,7 @@ class PipelineController():
         
         self.load_block(self.cloth_masking)
 
-        foreground_mask = self.cloth_masking(self.image_cache["cloth_image"])
+        foreground_mask = self.cloth_masking(self.image_cache["cloth_image"])[0].unsqueeze(0)
 
         self.image_cache["cloth_mask"] = foreground_mask
 
