@@ -7,9 +7,9 @@ import warnings
 import torch
 from PIL import Image
 
+import src.utilities.image_utils as image_utils
 from building_blocks.sd3_5.sd3_infer import CONFIGS, SD3Inferencer
 from src.blocks.base_block import BaseBlock
-import src.utilities.image_utils as image_utils
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +28,9 @@ def parse_prompts(prompt: str):
     return prompts
 
 
-class GarmentGenerator(BaseBlock):
+class SDImageGenerator(BaseBlock):
     """
-    Generates garments via Stable Diffusion 3.5
+    Generates images via Stable Diffusion 3.5
     """
 
     def __init__(self, device):
@@ -136,7 +136,7 @@ class GarmentGenerator(BaseBlock):
             skip_layer_config,
         )
 
-        #image to torch
+        # image to torch
         images = [image_utils.image_to_tensor(img) for img in imgs]
         print("shape of images:", [img.shape for img in images])
         return images
