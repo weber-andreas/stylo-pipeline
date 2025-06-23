@@ -181,3 +181,6 @@ cython_debug/
 
 *.pt
 *.pkl
+
+./src/server/cloth_out_dir/*
+./results/rating_database.csv
