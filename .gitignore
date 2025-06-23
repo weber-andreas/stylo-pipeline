@@ -183,4 +183,4 @@ cython_debug/
 *.pkl
 
 src/server/cloth_out_dir/*
-results/rating_database.csv
+results/*
