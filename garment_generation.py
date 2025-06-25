@@ -4,7 +4,7 @@ import os
 import torch
 
 from src.blocks.foreground_masking import ForegroundMasking
-from src.blocks.garment_generator import SDImageGenerator
+from src.blocks.image_generator import SDImageGenerator
 from src.utilities import image_utils
 
 logger = logging.getLogger(__name__)
@@ -21,8 +21,7 @@ def main():
     generator = SDImageGenerator()
     generator.load_model(use_controlnet=True, device="cpu", verbose=True)
     garments = generator(
-        prompt="A white polo shirt with red stripes on the collar and sleeve cuff neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m",
-        out_dir="results/garment_generator",
+        prompts="A white polo shirt with red stripes on the collar and sleeve cuff neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m",
     )
 
     single_garment = garments[0]

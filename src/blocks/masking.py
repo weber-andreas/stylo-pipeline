@@ -1,13 +1,15 @@
+import logging
+
 import numpy as np
 import torch
 from lang_sam import LangSAM
 from PIL import Image
 
 from src.blocks.base_block import BaseBlock
-import logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class Masking(BaseBlock):
     """Base class for fitting models."""
@@ -16,12 +18,12 @@ class Masking(BaseBlock):
         super().__init__(*args, **kwargs)
         self.checkpoint = "./building_blocks/sam/checkpoints/sam2.1_hiera_tiny.pt"
         self.model_cfg = "./building_blocks/sam/configs/sam2.1/sam2.1_hiera_t.yaml"
-        self.lang_sam = None
+        self.lang_sam: LangSAM | None = None
         self.is_loaded = False
 
     def unload_model(self):
         """Unload the model if it exists."""
-        if self.lang_sam == None:
+        if self.lang_sam is None:
             logger.info("Lang Sam not loaded. Won't unload.")
             return
 
@@ -35,7 +37,9 @@ class Masking(BaseBlock):
         self.lang_sam = LangSAM()
         self.is_loaded = True
 
-    def __call__(self, img):
+    def __call__(
+        self, img: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | None:
         """
         Mask the given image. Input image should be a path.
         Return (img, full_body, agn_mask, mask)
@@ -44,8 +48,8 @@ class Masking(BaseBlock):
             logger.error("LangSam not loaded. Call load_model() first.")
             return None
 
-        #image_pil = Image.open(img).convert("RGB")
-        #image_tensor = torch.from_numpy(np.array(image_pil)).permute(2, 0, 1) / 255
+        # image_pil = Image.open(img).convert("RGB")
+        # image_tensor = torch.from_numpy(np.array(image_pil)).permute(2, 0, 1) / 255
         image_pil = Image.fromarray((img.permute(1, 2, 0) * 255).byte().cpu().numpy())
         image_tensor = img
 
@@ -92,6 +96,7 @@ class Masking(BaseBlock):
         mask[hand_mask > 0] = 0
         mask[face_mask > 0] = 0
         mask[hair_mask > 0] = 0
+        # mask[neck_mask > 0] = 0
 
         agn_mask = torch.clone(image_tensor)
         agn_mask[:, mask[0] > 0] = 0.5

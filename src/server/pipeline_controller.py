@@ -3,14 +3,14 @@ import logging
 import time
 from csv import DictWriter
 
-from torchvision import transforms
+import torch
 
 from src.blocks.background_removal import BackgroundRemover
 from src.blocks.dense_pose import DensePose
 from src.blocks.fitter import Fitter
 from src.blocks.foreground_masking import ForegroundMasking
-from src.blocks.garment_generator import SDImageGenerator
 from src.blocks.harmonizer import Harmonizer
+from src.blocks.image_generator import SDImageGenerator
 from src.blocks.masking import Masking
 from src.server.utils import match_tensor_size
 
@@ -24,10 +24,10 @@ class PipelineController:
         logger.info("Init blocks...")
         self.masking = Masking()
         self.dense_pose = DensePose()
-        self.background_remover = BackgroundRemover()
         self.harmonizer = Harmonizer()
         self.fitter = Fitter()
         self.cloth_masking = ForegroundMasking()
+        self.background_remover = BackgroundRemover(device=device)
         self.image_generator = SDImageGenerator(device=device)
 
         logger.info("Init cache")
@@ -35,7 +35,7 @@ class PipelineController:
         self.rating_file = "./results/rating_database.csv"
         self.device = device
         self.loaded_blocks = []
-        self.image_cache = {
+        self.image_cache: dict[str, torch.Tensor | None] = {
             "stock_image": None,
             "fullbody_mask": None,
             "agn_image": None,
@@ -49,7 +49,7 @@ class PipelineController:
         }
         logger.info("PipelineController initialized.")
 
-    def load_block(self, block, device=None):
+    def load_block(self, block):
         if not block.is_loaded:
             block.load_model()
             self.loaded_blocks.append(block)
@@ -82,7 +82,7 @@ class PipelineController:
 
         self.load_block(self.masking)
 
-        img, fullbody, agn, mask = self.masking(self.image_cache["stock_image"])
+        img, fullbody, agn, mask = self.masking(self.image_cache["stock_image"])  # type: ignore
         self.image_cache["agn_image"] = agn
         self.image_cache["agn_mask"] = mask
         self.image_cache["fullbody_mask"] = fullbody
@@ -119,10 +119,9 @@ class PipelineController:
             return "Fullbody mask not set. Please generate the fullbody mask first."
 
         image_size = self.image_cache["stock_image"][0].shape
-        self.load_block(self.image_generator, device=device)
+        self.load_block(self.image_generator)
         background = self.image_generator(
-            prompt=prompt,
-            out_dir="./src/server/cloth_out_dir",
+            prompts=prompt,
             height=image_size[0],
             width=image_size[1],
         )[0]
@@ -178,31 +177,7 @@ class PipelineController:
         if self.image_cache["dense_pose"] is None:
             return "Dense pose not set. Please generate the dense pose first."
 
-        # # Crop image to deafult aspect ratio and downsample size
-        # SIZE = 1024, 768
-        # transform = transforms.Compose(
-        #     [
-        #         transforms.ToPILImage(),
-        #         transforms.Resize(768),
-        #         transforms.CenterCrop(SIZE),
-        #         transforms.ToTensor(),
-        #     ]
-        # )
-
-        # # Apply transform to AGN mask
-        # self.image_cache["agn_mask"] = transform(self.image_cache["agn_mask"])
-        # # Apply transform to cloth mask
-        # self.image_cache["cloth_mask"] = transform(self.image_cache["cloth_mask"])
-        # # Apply transform to cloth image
-        # self.image_cache["cloth_image"] = transform(self.image_cache["cloth_image"])
-        # # Apply transform to dense pose
-        # self.image_cache["dense_pose"] = transform(self.image_cache["dense_pose"])
-        # # Apply to harmonized image
-        # self.image_cache["harmonized_image"] = transform(
-        #     self.image_cache["harmonized_image"]
-        # )
-
-        self.load_block(self.fitter, device=self.device)
+        self.load_block(self.fitter)
 
         fitted_img = self.fitter(
             agn_mask=self.image_cache["agn_mask"],
@@ -244,7 +219,7 @@ class PipelineController:
         if self.image_cache["stock_image"] is None:
             return "Stock image not set. Please set the stock image first."
 
-        self.load_block(self.image_generator, device=self.device)
+        self.load_block(self.image_generator)
 
         # build promt:
         image_size = self.image_cache["stock_image"][0].shape
@@ -254,8 +229,7 @@ class PipelineController:
             + " neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m"
         )
         garment = self.image_generator(
-            prompt=prompt,
-            out_dir="./src/server/cloth_out_dir",
+            prompts=prompt,
             height=image_size[0],
             width=image_size[1],
         )[0]
