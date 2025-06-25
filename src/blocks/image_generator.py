@@ -5,7 +5,6 @@ import re
 import warnings
 
 import torch
-from PIL import Image
 
 import src.utilities.image_utils as image_utils
 from building_blocks.sd3_5.sd3_infer import CONFIGS, SD3Inferencer

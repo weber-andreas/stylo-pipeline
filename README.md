@@ -9,9 +9,10 @@ Application of Vision Foundation Models for image editing and Virtual Try-On (VI
 ## Pipeline Components
 We utilize several publicly available image editing models like:
 - [x] Background Manipulation: Yahoo's diffusion model [photo-background-generation](https://github.com/yahoo/photo-background-generation.git) 
-- [x] Fix Lighting:
+- [x] Fix Lighting: High-Resolution Image [Harmonizer](https://github.com/ZHKKKe/Harmonizer/) 
 - [x] Person Selection: Meta's semantic segmentation model [sam2](https://github.com/facebookresearch/sam2), Ultralytics: [YOLO-11](https://github.com/ultralytics/ultralytics)
 - [x] Garment Generator: Stable Diffusion 3.5: [sd3.5](https://github.com/Stability-AI/sd3.5)
+- [x] Garment Prompt Generation: LLaVA combines language understanding with vision capabilities [Llava](https://huggingface.co/llava-hf/llava-1.5-7b-hf) 
 - [x] Fit Garment: KAIST Research Group, South Korea VITON model [StableVITON](https://github.com/rlawjdghek/StableVITON)
 
 
@@ -25,8 +26,9 @@ conda activate stylo2
 conda env update -f environment.yaml
 ```
 
-# fix foreground BF16 error
-replace line 163 in Remover: pred = pred.float().numpy().squeeze()
+### Known Issues
+- **Fix Foreground BF16 Error**
+<br>Replace line 163 in Remover: pred = pred.float().numpy().squeeze()
 
 
 ### Add Foundation Model Repositories to this Codebase

@@ -21,7 +21,7 @@ from src.blocks.foreground_masking import ForegroundMasking
 from src.blocks.harmonizer import Harmonizer
 from src.blocks.image_generator import SDImageGenerator
 from src.blocks.masking import Masking
-from src.utilities import image_utils
+from src.utilities import image_utils, path_utils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -79,40 +79,19 @@ transform = transforms.Compose(
 )
 
 
-def read_images_from_dir(img_dir: pathlib.Path) -> list[torch.Tensor]:
-    """Read all images from a directory and return them as a list of tensors."""
-    logger.info("Reading images from directory: %s", img_dir)
-    img_list = []
-    for img_name in os.listdir(img_dir):
-        if img_name.endswith((".jpg", ".jpeg", ".png")):
-            img_path = os.path.join(img_dir, img_name)
-            img = plt.imread(img_path)
-            img_tensor = torch.from_numpy(img.copy())
-            img_tensor = (
-                img_tensor.permute(2, 0, 1) / 255.0
-            )  # Convert to CxHxW and normalize
-
-            img_tensor = transform(img_tensor)
-            img_list.append(img_tensor)
-    return img_list
-
-
-def read_prompts_from_file(file_path: pathlib.Path) -> list[str]:
-    """Read prompts from a text file and return them as a list of strings."""
-    with open(file_path, "r") as file:
-        prompts = [line.strip() for line in file if line.strip()]
-    return prompts
-
-
 def run():
     # Input paths
     img_dir = pathlib.Path("./eval/input/imgs")
     bg_prompts_file = pathlib.Path("./eval/input/prompts/background_prompts.txt")
-    garment_prompts_file = pathlib.Path("./eval/input/prompts/garment_prompts.txt")
+    garment_prompts_file = pathlib.Path(
+        "./eval/input/prompts/garment_prompts_generated2.csv"
+    )
 
-    images = read_images_from_dir(img_dir)
-    background_prompts = read_prompts_from_file(bg_prompts_file)
-    garment_prompts = read_prompts_from_file(garment_prompts_file)
+    images = list(
+        path_utils.read_images_from_dir(img_dir, transform=transform).values()
+    )
+    background_prompts = path_utils.read_prompts_from_file(bg_prompts_file)
+    garment_prompts = path_utils.read_prompts_from_file(garment_prompts_file)[:10]
 
     # Output paths
     timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")

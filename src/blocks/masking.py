@@ -53,35 +53,39 @@ class Masking(BaseBlock):
         image_pil = Image.fromarray((img.permute(1, 2, 0) * 255).byte().cpu().numpy())
         image_tensor = img
 
-        text_prompt_person = "person."
-        results = self.lang_sam.predict([image_pil], [text_prompt_person])
-        person_mask = results[0]["masks"][0]
+        try:
+            text_prompt_person = "person."
+            results = self.lang_sam.predict([image_pil], [text_prompt_person])
+            person_mask = results[0]["masks"][0]
 
-        text_prompt_pants = "pants."
-        results = self.lang_sam.predict([image_pil], [text_prompt_pants])
-        pants_mask = results[0]["masks"][0]
+            text_prompt_pants = "pants."
+            results = self.lang_sam.predict([image_pil], [text_prompt_pants])
+            pants_mask = results[0]["masks"][0]
 
-        text_prompt_shirt = "shirt."
-        results = self.lang_sam.predict([image_pil], [text_prompt_shirt])
-        shirt_mask = results[0]["masks"][0]
+            text_prompt_shirt = "shirt."
+            results = self.lang_sam.predict([image_pil], [text_prompt_shirt])
+            shirt_mask = results[0]["masks"][0]
 
-        # should be two hands
-        text_prompt_hand = "hand."
-        results = self.lang_sam.predict([image_pil], [text_prompt_hand])
-        hand_mask = results[0]["masks"][0]
-        hand_mask += results[0]["masks"][1]
+            # should be two hands
+            text_prompt_hand = "hand."
+            results = self.lang_sam.predict([image_pil], [text_prompt_hand])
+            hand_mask = results[0]["masks"][0]
+            hand_mask += results[0]["masks"][1]
 
-        text_prompt_face = "face"
-        results = self.lang_sam.predict([image_pil], [text_prompt_face])
-        face_mask = results[0]["masks"][0]
+            text_prompt_face = "face"
+            results = self.lang_sam.predict([image_pil], [text_prompt_face])
+            face_mask = results[0]["masks"][0]
 
-        text_prompt_hair = "hair"
-        results = self.lang_sam.predict([image_pil], [text_prompt_hair])
-        hair_mask = results[0]["masks"][0]
+            text_prompt_hair = "hair"
+            results = self.lang_sam.predict([image_pil], [text_prompt_hair])
+            hair_mask = results[0]["masks"][0]
 
-        text_prompt_neck = "neck."
-        results = self.lang_sam.predict([image_pil], [text_prompt_neck])
-        neck_mask = results[0]["masks"][0]
+            text_prompt_neck = "neck."
+            results = self.lang_sam.predict([image_pil], [text_prompt_neck])
+            neck_mask = results[0]["masks"][0]
+        except Exception as e:
+            logger.error(f"Error during LangSAM prediction: {e}")
+            return None
 
         person_mask = torch.from_numpy(person_mask).unsqueeze(0)
         pants_mask = torch.from_numpy(pants_mask).unsqueeze(0)
@@ -96,7 +100,6 @@ class Masking(BaseBlock):
         mask[hand_mask > 0] = 0
         mask[face_mask > 0] = 0
         mask[hair_mask > 0] = 0
-        # mask[neck_mask > 0] = 0
 
         agn_mask = torch.clone(image_tensor)
         agn_mask[:, mask[0] > 0] = 0.5
