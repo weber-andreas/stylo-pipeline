@@ -3,6 +3,7 @@
 import logging
 import os
 import sys
+from typing import Dict, List, Optional
 
 sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
 import pathlib
@@ -14,7 +15,7 @@ from torchvision import transforms
 logger = logging.getLogger(__name__)
 
 
-def validate_paths_exist(paths: list[str]) -> bool:
+def validate_paths_exist(paths: List[str]) -> bool:
     """Check if all paths exist."""
     for path in paths:
         if not os.path.exists(path):
@@ -24,8 +25,8 @@ def validate_paths_exist(paths: list[str]) -> bool:
 
 
 def read_images_from_dir(
-    img_dir: pathlib.Path, transform: transforms.Compose | None = None
-) -> dict[str, torch.Tensor]:
+    img_dir: pathlib.Path, transform: Optional[transforms.Compose] = None
+) -> Dict[str, torch.Tensor]:
     """Read all images from a directory and return them as a list of tensors."""
     logger.info("Reading images from directory: %s", img_dir)
     loaded_imgs = {}
@@ -72,7 +73,7 @@ def parse_csv_file(file_path):
     return descriptions
 
 
-def read_prompts_from_file(file_path: pathlib.Path) -> list[str]:
+def read_prompts_from_file(file_path: pathlib.Path) -> List[str]:
     """Read prompts from a text file and return them as a list of strings."""
     if file_path.suffix == ".csv":
         return parse_csv_file(file_path)

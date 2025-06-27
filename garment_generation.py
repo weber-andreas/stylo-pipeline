@@ -23,8 +23,11 @@ def main():
     garments = generator(
         prompts="A white polo shirt with red stripes on the collar and sleeve cuff neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m",
     )
-
     single_garment = garments[0]
+    garment_mask_img = image_utils.tensor_to_image(garment_mask)
+    image_utils.save_image(garment_mask_img, "results/garment_masking/garment_mask.png")
+    generator.unload_model()
+
     #### Remove Background of Grament ####
     foreground_masking = ForegroundMasking()
     foreground_masking.load_model()

@@ -81,17 +81,23 @@ transform = transforms.Compose(
 
 def run():
     # Input paths
-    img_dir = pathlib.Path("./eval/input/imgs")
+    img_dir = pathlib.Path("./eval/input/imgs_zalando")
     bg_prompts_file = pathlib.Path("./eval/input/prompts/background_prompts.txt")
     garment_prompts_file = pathlib.Path(
-        "./eval/input/prompts/garment_prompts_generated2.csv"
+        "./eval/input/prompts/garment_prompts_generated.csv"
     )
 
+    max_images = 1
+    start_idx = 0
     images = list(
         path_utils.read_images_from_dir(img_dir, transform=transform).values()
-    )
-    background_prompts = path_utils.read_prompts_from_file(bg_prompts_file)
-    garment_prompts = path_utils.read_prompts_from_file(garment_prompts_file)[:10]
+    )[start_idx : start_idx + max_images]
+    background_prompts = path_utils.read_prompts_from_file(bg_prompts_file)[
+        start_idx : start_idx + max_images
+    ]
+    garment_prompts = path_utils.read_prompts_from_file(garment_prompts_file)[
+        start_idx : start_idx + max_images
+    ]
 
     # Output paths
     timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")

@@ -67,7 +67,7 @@ for i, (img_name, img) in enumerate(imgs.items()):
     # create file if not exists and generate
 
 
-output_file = prompt_dir / "garment_prompts_generated2.csv"
+output_file = prompt_dir / "garment_prompts_generated.csv"
 
 with open(output_file, "w", newline="") as f:
     writer = csv.writer(f)
