@@ -53,39 +53,66 @@ class Masking(BaseBlock):
         image_pil = Image.fromarray((img.permute(1, 2, 0) * 255).byte().cpu().numpy())
         image_tensor = img
 
-        try:
-            text_prompt_person = "person."
-            results = self.lang_sam.predict([image_pil], [text_prompt_person])
+        valid_result = lambda x: x and "masks" in x[0] and len(x[0]["masks"]) > 0
+
+        text_prompt_person = "person."
+        results = self.lang_sam.predict([image_pil], [text_prompt_person])
+        if not valid_result(results):
+            person_mask = np.zeros(image_tensor.shape[1:], dtype=np.uint8)
+            logger.warning("No person mask found. Returning empty mask.")
+        else:
             person_mask = results[0]["masks"][0]
 
-            text_prompt_pants = "pants."
-            results = self.lang_sam.predict([image_pil], [text_prompt_pants])
+        text_prompt_pants = "pants."
+        results = self.lang_sam.predict([image_pil], [text_prompt_pants])
+        if not valid_result(results):
+            pants_mask = np.zeros(image_tensor.shape[1:], dtype=np.uint8)
+            logger.warning("No pants mask found. Returning empty mask.")
+        else:
             pants_mask = results[0]["masks"][0]
 
-            text_prompt_shirt = "shirt."
-            results = self.lang_sam.predict([image_pil], [text_prompt_shirt])
+        text_prompt_shirt = "shirt."
+        results = self.lang_sam.predict([image_pil], [text_prompt_shirt])
+        if not valid_result(results):
+            shirt_mask = np.zeros(image_tensor.shape[1:], dtype=np.uint8)
+            logger.warning("No shirt mask found. Returning empty mask.")
+        else:
             shirt_mask = results[0]["masks"][0]
 
-            # should be two hands
-            text_prompt_hand = "hand."
-            results = self.lang_sam.predict([image_pil], [text_prompt_hand])
+        # should be two hands
+        text_prompt_hand = "hand."
+        results = self.lang_sam.predict([image_pil], [text_prompt_hand])
+        if not valid_result(results):
+            hand_mask = np.zeros(image_tensor.shape[1:], dtype=np.uint8)
+            logger.warning("No hand mask found. Returning empty mask.")
+        else:
             hand_mask = results[0]["masks"][0]
-            hand_mask += results[0]["masks"][1]
+            if len(results[0]["masks"]) > 1:
+                hand_mask += results[0]["masks"][1]
 
-            text_prompt_face = "face"
-            results = self.lang_sam.predict([image_pil], [text_prompt_face])
+        text_prompt_face = "face"
+        results = self.lang_sam.predict([image_pil], [text_prompt_face])
+        if not valid_result(results):
+            face_mask = np.zeros(image_tensor.shape[1:], dtype=np.uint8)
+            logger.warning("No face mask found. Returning empty mask.")
+        else:
             face_mask = results[0]["masks"][0]
 
-            text_prompt_hair = "hair"
-            results = self.lang_sam.predict([image_pil], [text_prompt_hair])
+        text_prompt_hair = "hair"
+        results = self.lang_sam.predict([image_pil], [text_prompt_hair])
+        if not valid_result(results):
+            hair_mask = np.zeros(image_tensor.shape[1:], dtype=np.uint8)
+            logger.warning("No hair mask found. Returning empty mask.")
+        else:
             hair_mask = results[0]["masks"][0]
 
-            text_prompt_neck = "neck."
-            results = self.lang_sam.predict([image_pil], [text_prompt_neck])
+        text_prompt_neck = "neck"
+        results = self.lang_sam.predict([image_pil], [text_prompt_neck])
+        if not valid_result(results):
+            neck_mask = np.zeros(image_tensor.shape[1:], dtype=np.uint8)
+            logger.warning("No neck mask found. Returning empty mask.")
+        else:
             neck_mask = results[0]["masks"][0]
-        except Exception as e:
-            logger.error(f"Error during LangSAM prediction: {e}")
-            return None
 
         person_mask = torch.from_numpy(person_mask).unsqueeze(0)
         pants_mask = torch.from_numpy(pants_mask).unsqueeze(0)
