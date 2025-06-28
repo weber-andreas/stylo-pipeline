@@ -3,8 +3,8 @@ import os
 
 import torch
 
-from src.blocks.garment_generator import GarmentGenerator
 from src.blocks.foreground_masking import ForegroundMasking
+from src.blocks.image_generator import SDImageGenerator
 from src.utilities import image_utils
 
 logger = logging.getLogger(__name__)
@@ -18,14 +18,16 @@ def main():
     logger.info("Using torch version: %s", torch.__version__)
 
     #### Gargment Generation ####
-    generator = GarmentGenerator()
+    generator = SDImageGenerator()
     generator.load_model(use_controlnet=True, device="cpu", verbose=True)
     garments = generator(
-        prompt="A white polo shirt with red stripes on the collar and sleeve cuff neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m",
-        out_dir="results/garment_generator",
+        prompts="A white polo shirt with red stripes on the collar and sleeve cuff neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m",
     )
-
     single_garment = garments[0]
+    garment_mask_img = image_utils.tensor_to_image(garment_mask)
+    image_utils.save_image(garment_mask_img, "results/garment_masking/garment_mask.png")
+    generator.unload_model()
+
     #### Remove Background of Grament ####
     foreground_masking = ForegroundMasking()
     foreground_masking.load_model()

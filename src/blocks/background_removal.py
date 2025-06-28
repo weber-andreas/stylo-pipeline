@@ -1,15 +1,15 @@
+import gc
 import logging
 import os
 import sys
-import gc
 
 import torch
 
 sys.path.insert(0, os.path.abspath("./building_blocks/photo-background-generation"))
 from diffusers import DiffusionPipeline
 from PIL import Image, ImageOps
-from transparent_background import Remover
 from torchvision import transforms
+from transparent_background import Remover
 
 from src.blocks.base_block import BaseBlock
 from src.utilities import image_utils
@@ -21,10 +21,11 @@ logger.setLevel(logging.INFO)
 class BackgroundRemover(BaseBlock):
     """Removes background from images using photo-background-generation."""
 
-    def __init__(self):
+    def __init__(self, device="cuda"):
         self.model_name = "yahoo-inc/photo-background-generation"
         self.remover: Remover | None = None
         self.diffusion_pipeline: DiffusionPipeline | None = None
+        self.device = device
         self.is_loaded = False
 
     def unload_model(self):
@@ -36,12 +37,12 @@ class BackgroundRemover(BaseBlock):
         if self.remover is not None:
             del self.remover
             logger.info("Background Remover model unloaded.")
-        
+
         gc.collect()
         torch.cuda.empty_cache()
         self.is_loaded = False
 
-    def load_model(self, device="cuda", with_masking=True):
+    def load_model(self, with_masking=True):
         """Load the model"""
 
         if with_masking:
@@ -51,7 +52,7 @@ class BackgroundRemover(BaseBlock):
         self.diffusion_pipeline = DiffusionPipeline.from_pretrained(
             self.model_name, custom_pipeline=self.model_name
         )
-        self.diffusion_pipeline = self.diffusion_pipeline.to(device)
+        self.diffusion_pipeline = self.diffusion_pipeline.to(self.device)
         logger.info("Diffusion pipeline for background removal loaded successfully.")
         self.is_loaded = True
 

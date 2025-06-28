@@ -1,4 +1,4 @@
-name: stylo2
+name: stylo
 channels:
   - pytorch
   - anaconda
@@ -38,4 +38,8 @@ dependencies:
       - datasets==2.18.0
       - jupyterlab==4.1.6
       - transparent-background==1.2.12
+      - ftfy 
+      - regex
+      - tqdm
+      - git+https://github.com/openai/CLIP.git
 

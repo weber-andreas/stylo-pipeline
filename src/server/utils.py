@@ -1,15 +1,12 @@
-import numpy as np
-from PIL import Image
+import base64
 import io
-import torch
 import json
-import base64
 
-import torch
 import numpy as np
+import torch
+import torch.nn.functional as F
 from PIL import Image
-import io
-import base64
+
 
 def tensor_to_base64_png(tensor: torch.Tensor) -> str:
     """
@@ -39,7 +36,8 @@ def tensor_to_base64_png(tensor: torch.Tensor) -> str:
     encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
     return encoded
 
-def decode_tensor_from_json(img_base64_str: str) -> torch.Tensor:   
+
+def decode_tensor_from_json(img_base64_str: str) -> torch.Tensor:
     # Decode base64 image data
     image_bytes = base64.b64decode(img_base64_str)
 
@@ -48,14 +46,24 @@ def decode_tensor_from_json(img_base64_str: str) -> torch.Tensor:
     np_img = np.array(image)
 
     # Convert to tensor [C, H, W]
-    tensor = torch.from_numpy(np_img).permute(2, 0, 1).float() / 255.0  # normalized float
+    tensor = (
+        torch.from_numpy(np_img).permute(2, 0, 1).float() / 255.0
+    )  # normalized float
     return tensor
 
-def build_response_str(action: str, status: str, message: str = "", image = "") -> str:
-    response = {
-        "action": action,
-        "status": status,
-        "message": message,
-        "image": image
-    }
+
+def build_response_str(action: str, status: str, message: str = "", image="") -> str:
+    response = {"action": action, "status": status, "message": message, "image": image}
     return json.dumps(response)
+
+
+def match_tensor_size(src: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """Resize src tensor to match the spatial size of target."""
+    if src.shape[-2:] != target.shape[-2:]:
+        src = F.interpolate(
+            src.unsqueeze(0),
+            size=target.shape[-2:],
+            mode="bilinear",
+            align_corners=False,
+        ).squeeze(0)
+    return src
