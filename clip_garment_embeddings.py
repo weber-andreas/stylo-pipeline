@@ -5,7 +5,7 @@ import torch
 from torchvision import transforms
 
 from src.utilities import image_utils, path_utils
-from src.utilities.clip_encoder import ClipL
+from src.utilities.clip_encoder import ClipL, compute_similarity
 
 RECOMPUTE_IMAGE_FEATURES = True  # Set to True to recompute image features
 device = "cpu"
@@ -15,17 +15,12 @@ clip_model = ClipL(device=device)
 clip_model.load_model()
 
 
-# Specify specific prompt from the file that was generated via Llava on the ViTON test dataset
-image_name = "00034_00.jpg"  # image seed for the prompt
-image_prompts = pd.read_csv(
-    "eval/input/prompts/garment_prompts_generated.csv",
-    header=None,
-    names=["image", "prompt"],
+prompt = (
+    "A pink shirt with a collar and buttons, ideal for a casual "
+    "or formal occasion. The shirt has a fitted silhouette and a slightly loose fit. "
 )
-image_prompt_mapping = dict(zip(image_prompts["image"], image_prompts["prompt"]))
-prompt = image_prompt_mapping[image_name]
 text = clip_model.tokenize([prompt])
-image_names = list(image_prompt_mapping.keys())
+image_embeddings_path = "data/clip_image_features.pt"
 
 if RECOMPUTE_IMAGE_FEATURES:
     # Folder containing images
@@ -42,38 +37,27 @@ if RECOMPUTE_IMAGE_FEATURES:
     images = path_utils.read_images_from_dir(image_dir, transform)
     image_tensors = []
 
-    for name, img in images.items():
-        pil_image = image_utils.tensor_to_image(img)
-        image_utils.save_image(pil_image, f"results/clip/{name}")
-
-    image_tensors = list(images.values())[: len(image_prompt_mapping) - 1]
+    # get the image tensors from the dictionary
+    image_tensors = list(images.values())
+    image_names = list(images.keys())
     final_tensor = torch.stack(image_tensors).to(device)
 
     # Precompute the image embeddings
     with torch.no_grad():
         image_features = clip_model.encode_image(final_tensor)
 
-    torch.save(
-        {
-            "features": image_features.cpu(),  # move to CPU if needed
-            "image_names": image_names,
-        },
-        "clip_image_features.pt",
-    )
+    clip_model.save_image_embeddings(image_embeddings_path, image_features, image_names)
+
 
 # Load precomputed image embeddings
-image_features = torch.load("clip_image_features.pt")["features"]
-image_names = torch.load("clip_image_features.pt")["image_names"]
+image_embeddings = clip_model.load_image_embeddings(image_embeddings_path)
+image_features = image_embeddings["features"]
+image_names = image_embeddings["image_names"]
 
 with torch.no_grad():
     text_features = clip_model.encode_text(text)
+    similarities = compute_similarity(image_features, text_features)
 
-    # Normalize features
-    image_features /= image_features.norm(dim=-1, keepdim=True)
-    text_features /= text_features.norm(dim=-1, keepdim=True)
-
-    # Compute cosine similarity, dot product of normalized vectors
-    similarities = (image_features @ text_features.T).squeeze()
 
 image_similarity_map = {
     image_name: similarity.item()
@@ -82,8 +66,8 @@ image_similarity_map = {
 
 # Get top match
 top_idx = similarities.argmax().item()
+top_score = similarities.max().item()
 top_image_name = image_names[top_idx]
-top_score = similarities[top_idx].item()
 
 print(f"Prompt:\n{prompt}\n")
 print(f"Similarities for each image: {image_similarity_map}\n")
