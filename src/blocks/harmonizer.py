@@ -28,7 +28,6 @@ class Harmonizer(BaseBlock):
         torch.cuda.empty_cache()
         self.is_loaded = False
 
-
     def load_model(self):
         """Load the model."""
         self.harmonizer = model.Harmonizer()

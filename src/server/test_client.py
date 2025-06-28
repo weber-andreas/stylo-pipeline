@@ -18,6 +18,7 @@ import json
 import argparse
 from PIL import Image
 import io
+import cv2
 import time
 from random import randrange
 
@@ -50,19 +51,20 @@ async def main(uri):
             'garment_generation_quality': randrange(1, 11), 
             'fitting_quality': randrange(1, 11)
         }
-        await send_action(ws, "rating", rating=json.dumps(rating))
-        print("was sent")
-        """print("Connected to server.")
+        """        await send_action(ws, "rating", rating=json.dumps(rating))
+        print("was sent")"""
+
+        print("Connected to server.")
         # 1. List available commands
         resp = await send_action(ws, "LIST")
         print("Server LIST Response:", resp)
 
         # 2. Upload an image
-        with open("results/stable_viton_output.png", "rb") as f:
-            b64_img = base64.b64encode(f.read()).decode("utf-8")
-        print(b64_img)
+        with open("src/server/example_transfers/happy-young-man-standing-over-white-background-KCKEH1.jpg", "rb") as image_file:
+            data = base64.b64encode(image_file.read())
+        print(data)
         
-        resp = await send_action(ws, "UPLOAD", image=b64_img)
+        resp = await send_action(ws, "UPLOAD", image=data)
         print("Upload response:", resp)
 
         # 3. Remove background
@@ -78,7 +80,7 @@ async def main(uri):
         resp = await send_action(ws, "FIT")
         print("Fit response:", resp)
         if "image" in resp:
-            display_base64_image(resp["image"])"""
+            display_base64_image(resp["image"])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
