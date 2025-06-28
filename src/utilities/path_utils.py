@@ -35,9 +35,14 @@ def read_images_from_dir(
             img_path = os.path.join(img_dir, img_name)
             img = plt.imread(img_path)
             img_tensor = torch.from_numpy(img.copy())
-            img_tensor = (
-                img_tensor.permute(2, 0, 1) / 255.0
-            )  # Convert to CxHxW and normalize
+            if img_tensor.dim() == 2:
+                img_tensor = img_tensor.unsqueeze(0)
+            elif img_tensor.dim() == 3:
+                img_tensor = img_tensor.permute(2, 0, 1)  # Convert to CxHxW
+
+            if img_tensor.max() > 1.0:
+                img_tensor = img_tensor.float() / 255.0
+
             if transform:
                 img_tensor = transform(img_tensor)
             loaded_imgs[img_name] = img_tensor
