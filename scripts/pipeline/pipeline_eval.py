@@ -36,7 +36,7 @@ def run():
         "./eval/input/prompts/garment_prompts_generated.csv"
     )
 
-    max_images = 1
+    max_images = 10
     start_idx = 0
     images = list(
         path_utils.read_images_from_dir(
