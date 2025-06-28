@@ -1,4 +1,4 @@
-name: stylo
+name: stylo2
 channels:
   - pytorch
   - anaconda
