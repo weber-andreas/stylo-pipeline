@@ -296,6 +296,8 @@ class PipelineController:
                 return res
             logger.info("Auto-generated dense pose successfully.")
 
+    def set_stock_garment(self, garment, aut=True)
+
     def save_rating(self, rating_json, fields, peer):
         if type(rating_json) == str:
             rating_json = json.loads(rating_json)

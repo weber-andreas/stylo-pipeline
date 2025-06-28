@@ -60,7 +60,7 @@ async def main(uri):
 
         print("Connected to server.")
         print(await ws.recv())
-        resp = await send_action(ws, "search_garment", prompt="blue crop top", topk=1)
+        resp = await send_action(ws, "search_garment", prompt="yellow polo shirt", topk=1)
         if resp.get("image"):
             resp["image"] = json.loads(resp["image"])
         print("Search response:", resp)

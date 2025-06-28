@@ -24,6 +24,8 @@ This will start the server on the specified host and port, allowing clients to c
 """
 
 from __future__ import annotations
+from src.server.pipeline_controller import PipelineController
+from src.server.utils import *
 from websockets import WebSocketServerProtocol, serve
 from torchvision import transforms
 from PIL import Image
@@ -38,11 +40,10 @@ import os
 import sys
 
 # Add the project root directory to the Python path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+project_root = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../../"))
 sys.path.insert(0, project_root)
 
-from src.server.utils import *
-from src.server.pipeline_controller import PipelineController
 
 sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
 sys.path.insert(0, os.path.abspath("./building_blocks/sd3_5"))
@@ -202,6 +203,22 @@ async def _handle_client(ws: WebSocketServerProtocol):
                     await send_action_succ(ws, logger, cur_action,
                                            "search_garment successfully.", image=json.dumps(garment))
                     continue
+
+                case "choose_garment":
+                    cur_action = "choose_garment"
+                    if not await field_exist(ws, logger, request, "image", cur_action):
+                        continue
+
+                    if not await check_field_type(ws, logger, request, "image", cur_action):
+                        continue
+
+                    image_data = request["image"]
+                    img_tensor = decode_tensor_from_json(image_data)
+
+                    _controller.set_stock_garment(img_tensor, auto=True)
+
+                    succ_msg = "Stock garment uploaded successfully."
+                    await send_action_succ(ws, logger, cur_action, succ_msg)
 
                 case "rating":
                     cur_action = "rating"
