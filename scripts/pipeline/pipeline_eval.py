@@ -185,6 +185,26 @@ def run():
         image_utils.save_image(garment_mask_img, filename)
 
     foreground_masking.unload_model()
+    
+    """
+    # Garment Masking with langSam
+    from lang_sam import LangSAM
+    sam = LangSAM()
+    garment_masks: list[torch.Tensor] = []
+    for i, garment in enumerate(garments):
+        image_pil = Image.fromarray((garment.permute(1, 2, 0) * 255).byte().cpu().numpy())
+        text_prompt_garment = "garment with motiv."
+        results = sam.predict([image_pil], [text_prompt_garment])
+        garment_mask = torch.from_numpy(results[0]["masks"][0]).unsqueeze(0)
+
+        garment_masks.append(garment_mask)
+
+        garment_mask_img = image_utils.tensor_to_image(garment_mask)
+        filename = str(garment_mask_dir / f"garment_mask_{6000 + i}.png")
+        image_utils.save_image(garment_mask_img, filename)
+
+    sam = None
+    """
 
     # Replace Background
     logger.info("Replacing backgrounds in images...")

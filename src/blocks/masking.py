@@ -3,6 +3,7 @@ import logging
 import numpy as np
 import torch
 from lang_sam import LangSAM
+import cv2
 from PIL import Image
 
 from src.blocks.base_block import BaseBlock
@@ -114,6 +115,17 @@ class Masking(BaseBlock):
         else:
             neck_mask = results[0]["masks"][0]
 
+        # should be two feet
+        text_prompt_shoe = "feet / shoe."
+        results = self.lang_sam.predict([image_pil], [text_prompt_shoe])
+        if not valid_result(results):
+            shoe_mask = np.zeros(image_tensor.shape[1:], dtype=np.uint8)
+            logger.warning("No shoe mask found. Returning empty mask.")
+        else:
+            shoe_mask = results[0]["masks"][0]
+            if len(results[0]["masks"]) > 1:
+                shoe_mask += results[0]["masks"][1]
+
         person_mask = torch.from_numpy(person_mask).unsqueeze(0)
         pants_mask = torch.from_numpy(pants_mask).unsqueeze(0)
         shirt_mask = torch.from_numpy(shirt_mask).unsqueeze(0)
@@ -127,8 +139,18 @@ class Masking(BaseBlock):
         mask[hand_mask > 0] = 0
         mask[face_mask > 0] = 0
         mask[hair_mask > 0] = 0
+        if shoe_mask is not None:
+            shoe_mask = torch.from_numpy(shoe_mask).unsqueeze(0)
+            mask[shoe_mask > 0] = 0
+
+        mask_np = (mask.squeeze().cpu().numpy() * 255).astype(np.uint8)
+        kernel = np.ones((5, 5), np.uint8)
+        eroded = cv2.erode(mask_np, kernel, iterations=2)
+        dilated = cv2.dilate(eroded, kernel, iterations=5)
+        eroded = (torch.from_numpy(dilated).float() / 255).unsqueeze(0)
 
         agn_mask = torch.clone(image_tensor)
         agn_mask[:, mask[0] > 0] = 0.5
+
 
         return image_tensor, person_mask, agn_mask, mask
