@@ -24,6 +24,16 @@ This will start the server on the specified host and port, allowing clients to c
 """
 
 from __future__ import annotations
+from src.server.utils import *
+from src.server.pipeline_controller import PipelineController
+from websockets import WebSocketServerProtocol, serve
+from torchvision import transforms
+from PIL import Image
+import torch
+from pathlib import Path
+import json
+import asyncio
+import argparse
 
 import logging
 import os
@@ -31,24 +41,9 @@ import sys
 
 sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
 sys.path.insert(0, os.path.abspath("./building_blocks/sd3_5"))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../../")))
 
-import argparse
-import asyncio
-import json
-from pathlib import Path
-
-import torch
-from PIL import Image
-from torchvision import transforms
-from websockets import WebSocketServerProtocol, serve
-
-from src.server.pipeline_controller import PipelineController
-from src.server.utils import (
-    build_response_str,
-    decode_tensor_from_json,
-    tensor_to_base64_png,
-)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -67,17 +62,10 @@ async def _handle_client(ws: WebSocketServerProtocol):
     global _controller
 
     # Reject if another client is already connected
-    # if _active_client and _active_client.open:
     if _active_client is not None:
-        logger.warning(
-            "Refusing new connection: another client is active from %s",
-            _active_client.remote_address,
-        )
+        warning_msg = "Refusing new connection: another client is already connected"
+        await send_action_war(ws, logger, "connect", warning_msg)
 
-        error_connect_response = build_response_str(
-            "connect", "error", "Another client is already connected. Try again later."
-        )
-        await ws.send(error_connect_response)
         await ws.close(
             code=1013, reason="Service Unavailable"
         )  # 1013 = Try Again Later
@@ -85,241 +73,139 @@ async def _handle_client(ws: WebSocketServerProtocol):
 
     _active_client = ws  # register this client
     peer = ws.remote_address
-    logger.info("Client %s connected", peer)
 
-    succ_connect_response = build_response_str(
-        "connect", "success", "Successfull connection!"
-    )
-    await ws.send(succ_connect_response)
+    # send successfull connection status
+    connect_msg = "Successfull connection!"
+    await send_action_succ(ws, logger, "connect", connect_msg)
 
     try:
         async for message in ws:
-            if isinstance(message, bytes):
-                # Only text commands are accepted; ignore binary frames
-                await ws.send("ERROR: Binary frames not allowed for commands.")
-                continue
-
-            try:
-                request = json.loads(message)
-                if "action" not in request:
-                    await ws.send("ERROR: Missing 'action' field in request.")
-                    continue
-
-            except json.JSONDecodeError:
-                await ws.send("ERROR: Invalid JSON message.")
-                continue
-
-            action = request["action"].lower().strip()
-
             logger.info(
                 "Current vram usage before request: %s GB",
                 round(torch.cuda.memory_allocated() / 1024**3, 2),
             )
 
+            valid, request = await check_request_data(ws, logger, message, [])
+            if not valid:
+                continue
+
+            action = request["action"].lower().strip()
+
             logger.info("recieved action: %s", action)
             match action:
-                case "list":
-                    await ws.send(
-                        build_response_str(
-                            "list",
-                            "success",
-                            "Available: LIST, UPLOAD, BACKGROUND, DESIGN, FIT",
-                        )
-                    )
-                    continue
-
                 case "upload":
-                    if "image" not in request:
-                        logger.error("Missing 'image' field in upload request.")
-                        await ws.send(
-                            build_response_str(
-                                "upload",
-                                "error",
-                                "Missing 'image' field in upload request.",
-                            )
-                        )
+                    cur_action = "upload"
+                    if not await field_exist(ws, logger, request, "image", cur_action):
                         continue
-                    if not isinstance(request["image"], str):
-                        logger.error("Invalid 'image' field type in upload request.")
-                        await ws.send(
-                            build_response_str(
-                                "upload",
-                                "error",
-                                "'image' field must be a base64-encoded string.",
-                            )
-                        )
+
+                    if not await check_field_type(ws, logger, request, "image", cur_action):
                         continue
 
                     image_data = request["image"]
                     img_tensor = decode_tensor_from_json(image_data)
 
-                    # resize dividable by four
-                    # width, height = img_tensor.shape[1], img_tensor.shape[2]
-                    # width += width % 8
-                    # height += height % 8
-                    # resize = transforms.Resize((width, height))
-                    # img_tensor = resize(img_tensor)
-
                     # Crop image to deafult aspect ratio and downsample size
+                    SIZE = (1024, 768)
 
-                    SIZE = (1024, 768)  # (height, width)
-
-                    def pad_to_aspect(
-                        img: Image.Image, target_size=SIZE
-                    ) -> Image.Image:
-                        target_aspect = target_size[1] / target_size[0]  # width/height
-                        width, height = img.size
-                        current_aspect = width / height
-
-                        # Image already wide enough, no padding needed
-                        if current_aspect >= target_aspect:
-                            return img
-
-                        new_width = int(target_aspect * height)
-                        pad_total = new_width - width
-                        pad_left = pad_total // 2
-
-                        new_img = Image.new(
-                            img.mode, (new_width, height), color=(255, 255, 255)
-                        )
-                        new_img.paste(img, (pad_left, 0))
-
-                        return new_img
-
-                    # Compose pipeline with custom padding, resize, and tensor conversion
-                    transform = transforms.Compose(
-                        [
-                            transforms.ToPILImage(),
-                            transforms.Lambda(lambda img: pad_to_aspect(img, SIZE)),
-                            transforms.Resize(SIZE[1]),  # Resize height
-                            transforms.CenterCrop(SIZE),  # Center crop width
-                            transforms.ToTensor(),
-                        ]
-                    )
-
-                    img_tensor = transform(img_tensor)
-                    print(f"Image tensor shape after upload: {img_tensor.shape}")
-
+                    img_tensor = pad_aspect_transform(img_tensor, SIZE=SIZE)
                     _controller.set_stock_image(img_tensor, auto=True)
 
-                    logger.info("Stock image uploaded and set by %s", peer)
-                    await ws.send(
-                        build_response_str(
-                            "upload", "success", "Stock image uploaded successfully."
-                        )
-                    )
+                    succ_msg = "Stock image uploaded successfully."
+                    await send_action_succ(ws, logger, cur_action, succ_msg)
 
                 case "background":
+                    cur_action = "background"
                     # Handle background removal request
-                    if "prompt" not in request:
-                        logger.error("Missing 'prompt' field for background removal.")
-                        await ws.send(
-                            build_response_str(
-                                "background",
-                                "error",
-                                "Missing 'prompt' field for background removal.",
-                            )
-                        )
+                    if not await field_exist(ws, logger, request, "prompt", cur_action):
+                        continue
+
+                    if not await check_field_type(ws, logger, request, "prompt", cur_action):
                         continue
 
                     prompt = request["prompt"]
+                    logger.info(
+                        "Background removal requested with prompt: %s", prompt)
 
-                    logger.info("Background removal requested with prompt: %s", prompt)
                     bg_rm_result = _controller.remove_background(prompt)
-                    if type(bg_rm_result) is str:
-                        logger.error("Background removal failed: %s", bg_rm_result)
-                        await ws.send(
-                            build_response_str("background", "error", bg_rm_result)
-                        )
+                    if not await check_block_response(ws, logger, bg_rm_result, "background_remover", cur_action):
                         continue
 
                     harmonized_img = _controller.harmonize_image()
-                    if type(harmonized_img) is str:
-                        logger.error("Image harmonization failed: %s", harmonized_img)
-                        await ws.send(
-                            build_response_str("harmonize", "error", harmonized_img)
-                        )
+
+                    if not await check_block_response(ws, logger, harmonized_img, "harmonizer", cur_action):
                         continue
 
-                    await ws.send(
-                        build_response_str(
-                            "background",
-                            "success",
-                            "Background removed and image harmonized.",
-                            tensor_to_base64_png(harmonized_img),
-                        )
-                    )
-                    logger.info(
-                        "Background removal and harmonization completed successfully and sent to %s",
-                        peer,
-                    )
+                    await send_action_succ(ws, logger, cur_action,
+                                           "Background removed and image harmonized.")
                     continue
 
                 case "design":
-                    if "prompt" not in request:
-                        logger.error("Missing 'prompt' field for designer.")
-                        await ws.send(
-                            build_response_str(
-                                "design",
-                                "error",
-                                "Missing 'prompt' field for designer.",
-                            )
-                        )
+                    cur_action = "design"
+                    if not await field_exist(ws, logger, request, "prompt", cur_action):
+                        continue
+
+                    if not await check_field_type(ws, logger, request, "prompt", cur_action):
                         continue
 
                     prompt = request["prompt"]
-                    logger.info("Garment design requested with prompt: %s", prompt)
+                    logger.info(
+                        "Garment design requested with prompt: %s", prompt)
                     garment = _controller.design_garment(prompt, auto=True)
 
-                    print(garment)
-                    print(garment.shape)
-                    if type(garment) is str:
-                        logger.error("Garment design failed: %s", garment)
-                        await ws.send(build_response_str("design", "error", garment))
+                    if not await check_block_response(ws, logger, garment, "garment_generator", cur_action):
                         continue
 
-                    await ws.send(
-                        build_response_str(
-                            "design",
-                            "success",
-                            "Designed cloth successfully.",
-                            tensor_to_base64_png(garment),
-                        )
-                    )
-                    logger.info("Designed garment successfully and sent to %s", peer)
+                    await send_action_succ(
+                        ws, logger, cur_action, "Designed cloth successfully.", tensor_to_base64_png(garment))
                     continue
 
                 case "fit":
+                    cur_action = "fit"
                     fitted_img = _controller.fit_garment()
-                    if type(fitted_img) is str:
-                        logger.error("Garment fitting failed: %s", fitted_img)
-                        await ws.send(
-                            build_response_str("fit", "error", message=fitted_img)
-                        )
+
+                    if not await check_block_response(ws, logger, fitted_img, "stable_viton", cur_action):
                         continue
 
-                    await ws.send(
-                        build_response_str(
-                            "fit",
-                            "success",
-                            "Garment fitting completed successfully.",
-                            tensor_to_base64_png(fitted_img),
-                        )
-                    )
-                    logger.info("Garment fitting completed and sent to %s", peer)
+                    await send_action_succ(
+                        ws, logger, cur_action, "Garment fitting completed successfully.", tensor_to_base64_png(fitted_img))
+
+                    continue
+
+                case "search_garment":
+                    cur_action = "search_garment"
+
+                    if not await field_exist(ws, logger, request, "prompt", cur_action):
+                        continue
+
+                    if not await check_field_type(ws, logger, request, "prompt", cur_action):
+                        continue
+
+                    prompt = request["prompt"]
+
+                    topk = 5
+                    if "topk" in request:
+                        topk = int(request["topk"])
+                        logger.info("got 'topk' for search_garment: %s",
+                                    request["topk"])
+
+                    logger.info(
+                        "Garment design requested with search_prompt: %s and topk: %s", prompt, str(topk))
+                    # todo:: change
+                    garment = _controller.search_garment(prompt, topk)
+
+                    if not await check_block_response(ws, logger, garment, "garment_search", cur_action):
+                        continue
+
+                    await send_action_succ(ws, logger, cur_action,
+                                           "search_garment successfully.", image=json.dumps(garment))
                     continue
 
                 case "rating":
-                    if "rating" not in request:
-                        logger.error("Missing 'rating' field in rating.")
-                        await ws.send(
-                            build_response_str(
-                                "rating",
-                                "error",
-                                message="Missing 'rating' field in rating.",
-                            )
-                        )
+                    cur_action = "rating"
+
+                    if not await field_exist(ws, logger, request, "rating", cur_action):
                         continue
+
                     fields = [
                         "usability",
                         "customizability",
@@ -328,28 +214,25 @@ async def _handle_client(ws: WebSocketServerProtocol):
                         "garment_generation_quality",
                         "fitting_quality",
                     ]
+                    missing_field = False
                     for f in fields:
                         if f not in request["rating"]:
-                            logger.error("Missing '" + f + "' field in rating.")
-                            await ws.send(
-                                build_response_str(
-                                    "rating",
-                                    "error",
-                                    message="Missing '" + f + "' field in rating.",
-                                )
-                            )
-                            continue
+                            err_msg = "Missing '" + f + "' field in rating."
+                            await send_action_err(ws, logger, cur_action, err_msg)
+                            missing_field = True
+                            break
+
+                    if missing_field:
+                        continue
+
                     _controller.save_rating(request["rating"], fields, peer)
+                    await send_action_succ(ws, logger, cur_action,
+                                           "Successfully saved rating!")
+                    continue
 
                 case default:
-                    logger.error("Unkown action: %s", action)
-                    await ws.send(
-                        build_response_str(
-                            "error",
-                            "error",
-                            f"Unknown action: {action}. Use LIST, UPLOAD, BACKGROUND, DESIGN, or FIT.",
-                        )
-                    )
+                    await send_action_err(ws, logger, "unkown",
+                                          "action was not found!")
                     continue
 
     except Exception as exc:  # noqa: BLE001
@@ -364,11 +247,58 @@ async def _handle_client(ws: WebSocketServerProtocol):
         logger.info("Client %s disconnected", peer)
 
 
+async def check_request_data(ws, logger, message, fields):
+    if isinstance(message, bytes):
+        await send_action_err(ws, logger, "unkown",
+                              "Binary frames not allowed for commands.")
+        return (False, None)
+
+    try:
+        request = json.loads(message)
+
+        if "action" not in request:
+            error_msg = "Missing 'action' field in request."
+            await send_action_err(ws, logger, "unkown", error_msg)
+            return (False, None)
+
+        return (True, request)
+
+    except json.JSONDecodeError:
+        error_msg = "Invalid JSON."
+        await send_action_err(ws, logger, "unkown", error_msg)
+        return (False, None)
+
+
+async def field_exist(ws, logger, request, field, action):
+    if field not in request:
+        err_msg = "Field '{field}' in request not found!".format(field=field)
+        await send_action_err(ws, logger, action, err_msg)
+        return False
+    return True
+
+
+async def check_field_type(ws, logger, request, field, action):
+    if not isinstance(request[field], str):
+        err_msg = "Field '{field}' is not type String!".format(field=field)
+        await send_action_err(ws, logger, action, err_msg)
+        return False
+    return True
+
+
+async def check_block_response(ws, logger, response, block, action):
+    if type(response) is str:
+        err_msg = "Block: '{block}' failed: {err}".format(
+            block=block, err=response)
+        await send_action_err(ws, logger, action, err_msg)
+        return False
+    return True
+
 # --------------------------- Entry point ----------------------------------- #
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Single‑client image WebSocket server")
+    parser = argparse.ArgumentParser(
+        description="Single‑client image WebSocket server")
     parser.add_argument(
         "--host", default="localhost", help="Host to bind (default: localhost)"
     )

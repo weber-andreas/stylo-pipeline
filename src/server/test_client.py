@@ -22,16 +22,20 @@ import cv2
 import time
 from random import randrange
 
+
 async def send_action(ws, action, **kwargs):
     payload = {"action": action, **kwargs}
     await ws.send(json.dumps(payload))
     response = await ws.recv()
     return json.loads(response)
 
+
 def display_base64_image(b64_str):
     img_data = base64.b64decode(b64_str)
     img = Image.open(io.BytesIO(img_data))
-    img.save("src/server/example_transfers/example_transfers_" + str(time.time()) + ".png")
+    img.save("src/server/example_transfers/example_transfers_" +
+             str(time.time()) + ".png")
+
 
 async def main(uri):
     async with websockets.connect(uri, max_size=10 * 1024 * 1024, ping_interval=None) as ws:
@@ -42,28 +46,29 @@ async def main(uri):
                 print("Server requested close:", message)
                 await ws.close()
                 return"""
-        
+
         rating = {
-            'usability': randrange(1, 11), 
-            'customizability': randrange(1, 11), 
-            'overall_quality': randrange(1, 11), 
-            'background_quality': randrange(1, 11), 
-            'garment_generation_quality': randrange(1, 11), 
+            'usability': randrange(1, 11),
+            'customizability': randrange(1, 11),
+            'overall_quality': randrange(1, 11),
+            'background_quality': randrange(1, 11),
+            'garment_generation_quality': randrange(1, 11),
             'fitting_quality': randrange(1, 11)
         }
         """        await send_action(ws, "rating", rating=json.dumps(rating))
         print("was sent")"""
 
         print("Connected to server.")
-        # 1. List available commands
-        resp = await send_action(ws, "LIST")
-        print("Server LIST Response:", resp)
-
-        # 2. Upload an image
+        await ws.recv()
+        resp = await send_action(ws, "search_garment", prompt="red polo shirt", topk=5)
+        if resp.get("image"):
+            resp["image"] = json.loads(resp["image"])
+        print("Search response:", resp)
+        """# 2. Upload an image
         with open("src/server/example_transfers/happy-young-man-standing-over-white-background-KCKEH1.jpg", "rb") as image_file:
             data = base64.b64encode(image_file.read())
         print(data)
-        
+
         resp = await send_action(ws, "UPLOAD", image=data)
         print("Upload response:", resp)
 
@@ -80,7 +85,7 @@ async def main(uri):
         resp = await send_action(ws, "FIT")
         print("Fit response:", resp)
         if "image" in resp:
-            display_base64_image(resp["image"])
+            display_base64_image(resp["image"])"""
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

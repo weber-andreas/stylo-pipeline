@@ -3,6 +3,7 @@ import logging
 import time
 from csv import DictWriter
 
+from src.blocks.search_garment import SearchGarment
 import torch
 
 from src.blocks.background_removal import BackgroundRemover
@@ -27,8 +28,9 @@ class PipelineController:
         self.harmonizer = Harmonizer()
         self.fitter = Fitter()
         self.cloth_masking = ForegroundMasking()
-        self.background_remover = BackgroundRemover(device=device)
+        # self.background_remover = BackgroundRemover(device=device)
         self.image_generator = SDImageGenerator(device=device)
+        self.garment_searcher = SearchGarment(device=device)
 
         logger.info("Init cache")
         # Initialize image cache
@@ -53,14 +55,16 @@ class PipelineController:
         if not block.is_loaded:
             block.load_model()
             self.loaded_blocks.append(block)
-            logger.info(f"Block {block.__class__.__name__} loaded successfully.")
+            logger.info(
+                f"Block {block.__class__.__name__} loaded successfully.")
         else:
             logger.info(f"Block {block.__class__.__name__} is already loaded.")
 
     def unload_block(self, block):
         if block.is_loaded:
             block.unload_model()
-            logger.info(f"Block {block.__class__.__name__} unloaded successfully.")
+            logger.info(
+                f"Block {block.__class__.__name__} unloaded successfully.")
             self.loaded_blocks.remove(block)
         else:
             logger.info(
@@ -82,7 +86,8 @@ class PipelineController:
 
         self.load_block(self.masking)
 
-        img, fullbody, agn, mask = self.masking(self.image_cache["stock_image"])  # type: ignore
+        img, fullbody, agn, mask = self.masking(
+            self.image_cache["stock_image"])  # type: ignore
         self.image_cache["agn_image"] = agn
         self.image_cache["agn_mask"] = mask
         self.image_cache["fullbody_mask"] = fullbody
@@ -91,6 +96,17 @@ class PipelineController:
 
         self.unload_block(self.masking)
         return (img, fullbody, agn, mask)
+
+    def search_garment(self, promt, topk):
+        logger.info("Searching for garment...")
+        self.load_block(self.garment_searcher)
+
+        results = self.garment_searcher(promt, topk)
+        logger.info("Garment search completed. Found: " +
+                    str(len(results)) + " results.")
+
+        self.unload_block(self.garment_searcher)
+        return results
 
     def dense_pose_gen(self):
         logger.info("Generating dense pose...")
@@ -139,7 +155,7 @@ class PipelineController:
         self.image_cache["background_removed_image"] = result
         logger.info("Background removed successfully.")
 
-        self.unload_block(self.background_remover)
+        self.unload_block(self.image_generator)
         return result
 
     def harmonize_image(self):
@@ -271,9 +287,14 @@ class PipelineController:
 
         if auto:
             logger.info("Auto-generating masks after setting stock image...")
-            self.mask_gen()
+            res = self.mask_gen()
+            if type(res) == str:
+                return res
             logger.info("Auto-generated masks successfully.")
-            self.dense_pose_gen()
+            res = self.dense_pose_gen()
+            if type(res) == str:
+                return res
+            logger.info("Auto-generated dense pose successfully.")
 
     def save_rating(self, rating_json, fields, peer):
         if type(rating_json) == str:

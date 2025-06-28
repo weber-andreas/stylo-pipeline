@@ -1,7 +1,10 @@
 import logging
+import base64
 
 import clip
 import torch
+import os
+from src.blocks.base_block import BaseBlock
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,18 +29,21 @@ def get_highest_similarities(
     min_similarity: float | None = None,
 ) -> list[tuple[str, float]]:
     """Rank images by similarity to the text features."""
+    sim_dict = dict(
+        zip(image_similarity_map["image_names"], image_similarity_map["features"]))
     sorted_items = sorted(
-        image_similarity_map.items(), key=lambda x: x[1], reverse=True
+        sim_dict.items(), key=lambda x: x[1], reverse=True
     )
     sorted_items = sorted_items[:k_top_elements]
 
     if min_similarity is not None:
-        sorted_items = [item for item in sorted_items if item[1] >= min_similarity]
+        sorted_items = [
+            item for item in sorted_items if item[1] >= min_similarity]
 
     return sorted_items
 
 
-class ClipL:
+class SearchGarment(BaseBlock):
     """OpenAS's Contrastive Language-Image Pretraining model."""
 
     def __init__(self, device="cuda"):
@@ -47,6 +53,8 @@ class ClipL:
         self.device = device
         self.model = None
         self.is_loaded = False
+        self.img_emb_path = 'data/clip_image_features.pt'
+        self.img_path = 'building_blocks/StableVITON/data/original_viton_hd/test/cloth'
 
     def unload_model(self):
         """Unload the model if it exists."""
@@ -104,3 +112,23 @@ class ClipL:
             path,
         )
         logger.info(f"Image embeddings saved to {path}.")
+
+    def __call__(self, prompt, topk, min_sim=None):
+        text_features = self.encode_text(self.tokenize([prompt]))
+        image_features = self.load_image_embeddings(self.img_emb_path)
+
+        sim_scores = compute_similarity(image_features=image_features["features"],
+                                        text_features=text_features)
+
+        image_features["features"] = sim_scores
+        sorted_results = get_highest_similarities(
+            image_features, topk, min_sim)
+
+        base64_images = []
+        for path, score in sorted_results:
+            path = os.path.join(self.img_path, path)
+            with open(path, "rb") as image_file:
+                encoded_string = base64.b64encode(
+                    image_file.read()).decode('utf-8')
+                base64_images.append(encoded_string)
+        return base64_images
