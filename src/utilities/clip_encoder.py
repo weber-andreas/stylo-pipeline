@@ -20,6 +20,23 @@ def compute_similarity(
     return similarities
 
 
+def get_highest_similarities(
+    image_similarity_map: dict[str, float],
+    k_top_elements: int = 5,
+    min_similarity: float | None = None,
+) -> list[tuple[str, float]]:
+    """Rank images by similarity to the text features."""
+    sorted_items = sorted(
+        image_similarity_map.items(), key=lambda x: x[1], reverse=True
+    )
+    sorted_items = sorted_items[:k_top_elements]
+
+    if min_similarity is not None:
+        sorted_items = [item for item in sorted_items if item[1] >= min_similarity]
+
+    return sorted_items
+
+
 class ClipL:
     """OpenAS's Contrastive Language-Image Pretraining model."""
 

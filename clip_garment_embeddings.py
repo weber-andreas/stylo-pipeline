@@ -1,26 +1,28 @@
 import pathlib
 
-import pandas as pd
 import torch
 from torchvision import transforms
 
-from src.utilities import image_utils, path_utils
-from src.utilities.clip_encoder import ClipL, compute_similarity
+from src.utilities import path_utils
+from src.utilities.clip_encoder import (
+    ClipL,
+    compute_similarity,
+    get_highest_similarities,
+)
 
-RECOMPUTE_IMAGE_FEATURES = True  # Set to True to recompute image features
+RECOMPUTE_IMAGE_FEATURES = False  # Set to True to recompute image features
 device = "cpu"
-# model, preprocess = clip.load("ViT-B/32", device=device)
 
 clip_model = ClipL(device=device)
 clip_model.load_model()
 
+image_embeddings_path = "data/clip_image_features.pt"
 
+# Define prompt
 prompt = (
     "A pink shirt with a collar and buttons, ideal for a casual "
     "or formal occasion. The shirt has a fitted silhouette and a slightly loose fit. "
 )
-text = clip_model.tokenize([prompt])
-image_embeddings_path = "data/clip_image_features.pt"
 
 if RECOMPUTE_IMAGE_FEATURES:
     # Folder containing images
@@ -55,6 +57,7 @@ image_features = image_embeddings["features"]
 image_names = image_embeddings["image_names"]
 
 with torch.no_grad():
+    text = clip_model.tokenize([prompt])
     text_features = clip_model.encode_text(text)
     similarities = compute_similarity(image_features, text_features)
 
@@ -69,6 +72,9 @@ top_idx = similarities.argmax().item()
 top_score = similarities.max().item()
 top_image_name = image_names[top_idx]
 
+filtered_image_similarity_map = get_highest_similarities(
+    image_similarity_map, k_top_elements=5, min_similarity=0.25
+)
 print(f"Prompt:\n{prompt}\n")
-print(f"Similarities for each image: {image_similarity_map}\n")
+print(f"Similarities for each image: {filtered_image_similarity_map}\n")
 print(f"Most similar image: {top_image_name} (similarity score: {top_score:.4f})")
