@@ -101,3 +101,35 @@ def add_title_to_image(image, title, font=None, font_size=20, color=(255, 255, 2
     draw.text((x, y), title, fill=color, font=font)
 
     return image
+
+
+def pad_to_aspect(img: Image.Image, target_size) -> Image.Image:
+    target_aspect = target_size[1] / target_size[0]  # width/height
+    width, height = img.size
+    current_aspect = width / height
+
+    # Image already wide enough, no padding needed
+    if current_aspect >= target_aspect:
+        return img
+
+    new_width = int(target_aspect * height)
+    pad_total = new_width - width
+    pad_left = pad_total // 2
+
+    new_img = Image.new(img.mode, (new_width, height), color=(255, 255, 255))
+    new_img.paste(img, (pad_left, 0))
+
+    return new_img
+
+
+# Compose pipeline with custom padding, resize, and tensor conversion
+SIZE = (1024, 768)  # (height, width)
+stable_vition_image_transformation = transforms.Compose(
+    [
+        transforms.ToPILImage(),
+        transforms.Lambda(lambda img: pad_to_aspect(img, SIZE)),
+        transforms.Resize(SIZE[1]),  # Resize height
+        transforms.CenterCrop(SIZE),  # Center crop width
+        transforms.ToTensor(),
+    ]
+)

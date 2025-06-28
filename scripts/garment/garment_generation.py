@@ -1,7 +1,11 @@
 import logging
 import os
+import sys
 
 import torch
+
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(root_dir)
 
 from src.blocks.foreground_masking import ForegroundMasking
 from src.blocks.image_generator import SDImageGenerator

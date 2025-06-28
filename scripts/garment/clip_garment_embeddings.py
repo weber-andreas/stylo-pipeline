@@ -1,7 +1,12 @@
+import os
 import pathlib
+import sys
 
 import torch
 from torchvision import transforms
+
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(root_dir)
 
 from src.utilities import path_utils
 from src.utilities.clip_encoder import (

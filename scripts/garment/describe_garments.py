@@ -1,5 +1,7 @@
 import csv
+import os
 import pathlib
+import sys
 import time
 
 import torch
@@ -8,6 +10,9 @@ from transformers import (
     BitsAndBytesConfig,
     LlavaForConditionalGeneration,
 )
+
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(root_dir)
 
 from src.utilities import image_utils, path_utils
 

@@ -2,18 +2,19 @@ import logging
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(root_dir)
+sys.path.insert(0, os.path.abspath(f"{root_dir}/building_blocks/StableVITON"))
+
 
 import matplotlib.pyplot as plt
 import torch
-import numpy as np
 
 from src.blocks.background_removal import BackgroundRemover
 from src.blocks.dense_pose import DensePose
 from src.blocks.fitter import Fitter
 from src.blocks.harmonizer import Harmonizer
 from src.blocks.masking import Masking
-from src.utilities import image_utils
 from src.utilities.path_utils import validate_paths_exist
 
 logger = logging.getLogger(__name__)

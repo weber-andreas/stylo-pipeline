@@ -1,19 +1,15 @@
 import datetime
-import enum
 import logging
 import os
 import sys
 
-from matplotlib import image
-
-sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
+root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(root_dir)
+sys.path.insert(0, os.path.abspath(f"{root_dir}/building_blocks/StableVITON"))
 
 import pathlib
 
-import matplotlib.pyplot as plt
 import torch
-from PIL import Image
-from torchvision import transforms
 
 from src.blocks.dense_pose import DensePose
 from src.blocks.fitter import Fitter
@@ -32,56 +28,9 @@ torch.cuda.empty_cache()
 DEVICE = "cpu"
 
 
-class QualitiyLevel(enum.Enum):
-    MEDIUM = "medium"
-    HIGH = "high"
-
-
-CONFIGS = {
-    QualitiyLevel.MEDIUM: {
-        "diffusion_steps": 40,
-    },
-    QualitiyLevel.HIGH: {
-        "diffusion_steps": 200,
-    },
-}
-
-
-def pad_to_aspect(img: Image.Image, target_size) -> Image.Image:
-    target_aspect = target_size[1] / target_size[0]  # width/height
-    width, height = img.size
-    current_aspect = width / height
-
-    # Image already wide enough, no padding needed
-    if current_aspect >= target_aspect:
-        return img
-
-    new_width = int(target_aspect * height)
-    pad_total = new_width - width
-    pad_left = pad_total // 2
-
-    new_img = Image.new(img.mode, (new_width, height), color=(255, 255, 255))
-    new_img.paste(img, (pad_left, 0))
-
-    return new_img
-
-
-# Compose pipeline with custom padding, resize, and tensor conversion
-SIZE = (1024, 768)  # (height, width)
-transform = transforms.Compose(
-    [
-        transforms.ToPILImage(),
-        transforms.Lambda(lambda img: pad_to_aspect(img, SIZE)),
-        transforms.Resize(SIZE[1]),  # Resize height
-        transforms.CenterCrop(SIZE),  # Center crop width
-        transforms.ToTensor(),
-    ]
-)
-
-
 def run():
     # Input paths
-    img_dir = pathlib.Path("./eval/input/imgs_zalando")
+    img_dir = pathlib.Path("./eval/input/imgs")
     bg_prompts_file = pathlib.Path("./eval/input/prompts/background_prompts.txt")
     garment_prompts_file = pathlib.Path(
         "./eval/input/prompts/garment_prompts_generated.csv"
@@ -90,7 +39,9 @@ def run():
     max_images = 1
     start_idx = 0
     images = list(
-        path_utils.read_images_from_dir(img_dir, transform=transform).values()
+        path_utils.read_images_from_dir(
+            img_dir, transform=image_utils.stable_vition_image_transformation
+        ).values()
     )[start_idx : start_idx + max_images]
     background_prompts = path_utils.read_prompts_from_file(bg_prompts_file)[
         start_idx : start_idx + max_images
