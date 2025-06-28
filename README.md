@@ -57,3 +57,20 @@ huggingface-cli download stabilityai/stable-diffusion-3.5-medium --local-dir bui
 conda env update -f environment.yaml
 conda activate stylo-pipeline
 ```
+
+# Slurm Usage
+1. go in stylo-pipeline root dir
+2. allocate hardware
+```
+srun --gpus=1 --mem=64G --gres=gpu:1,VRAM:24G --cpus-per-task=8 --time=5:00:00 --pty zsh
+```
+3. run startup script 
+```
+./run_server.sh <username> <forward_machine> <ssh key file>
+```
+Example:
+```
+./run_server.sh foef atcremers72.cvai.cit.tum.de ~/.ssh/mumol
+```
+In case you have no ssh key file put a none existent file down and type your password
+(4. You may have to fix LangSam cuda device selcection or conda init)
