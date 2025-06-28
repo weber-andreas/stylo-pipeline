@@ -59,8 +59,8 @@ async def main(uri):
         print("was sent")"""
 
         print("Connected to server.")
-        await ws.recv()
-        resp = await send_action(ws, "search_garment", prompt="red polo shirt", topk=5)
+        print(await ws.recv())
+        resp = await send_action(ws, "search_garment", prompt="blue crop top", topk=1)
         if resp.get("image"):
             resp["image"] = json.loads(resp["image"])
         print("Search response:", resp)
@@ -89,8 +89,8 @@ async def main(uri):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", default="localhost")
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
     uri = f"ws://{args.host}:{args.port}"
     asyncio.run(main(uri))

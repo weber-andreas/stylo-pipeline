@@ -24,8 +24,6 @@ This will start the server on the specified host and port, allowing clients to c
 """
 
 from __future__ import annotations
-from src.server.utils import *
-from src.server.pipeline_controller import PipelineController
 from websockets import WebSocketServerProtocol, serve
 from torchvision import transforms
 from PIL import Image
@@ -39,10 +37,15 @@ import logging
 import os
 import sys
 
+# Add the project root directory to the Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+sys.path.insert(0, project_root)
+
+from src.server.utils import *
+from src.server.pipeline_controller import PipelineController
+
 sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
 sys.path.insert(0, os.path.abspath("./building_blocks/sd3_5"))
-sys.path.insert(0, os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../")))
 
 
 logger = logging.getLogger(__name__)
