@@ -70,7 +70,7 @@ srun --gpus=1 --mem=64G --gres=gpu:1,VRAM:24G --cpus-per-task=8 --time=5:00:00 -
 ```
 Example:
 ```
-./run_server.sh foef atcremers72.cvai.cit.tum.de ~/.ssh/mumol
+./run_server.sh tom computer1.tum.de ~/.ssh/key_file
 ```
 In case you have no ssh key file put a none existent file down and type your password
 (4. You may have to fix LangSam cuda device selcection or conda init)
