@@ -230,12 +230,17 @@ class PipelineController:
         self.unload_block(self.cloth_masking)
         return foreground_mask
 
-    def design_garment(self, prompt, auto=False):
+    def design_garment(self, prompt, auto=True):
 
         if self.image_cache["stock_image"] is None:
             return "Stock image not set. Please set the stock image first."
 
         self.load_block(self.image_generator)
+
+        logger.info(
+            "Current vram usage before request: %s GB",
+            round(torch.cuda.memory_allocated() / 1024**3, 2),
+        )
 
         # build promt:
         image_size = self.image_cache["stock_image"][0].shape
@@ -254,6 +259,11 @@ class PipelineController:
         garment = match_tensor_size(garment, image)
 
         self.image_cache["cloth_image"] = garment
+
+        logger.info(
+            "Current vram usage before request: %s GB",
+            round(torch.cuda.memory_allocated() / 1024**3, 2),
+        )
 
         self.unload_block(self.image_generator)
 
@@ -296,7 +306,18 @@ class PipelineController:
                 return res
             logger.info("Auto-generated dense pose successfully.")
 
-    def set_stock_garment(self, garment, aut=True)
+    def set_stock_garment(self, garment, auto=True):
+        self.image_cache["cloth_image"] = None
+        self.image_cache["cloth_mask"] = None
+        self.image_cache["cloth_image"] = garment
+
+        if auto:
+            logger.info(
+                "Auto-generating cloth masks after setting stock garment...")
+            self.get_cloth_mask()
+            logger.info("Auto-generated cloth masks successfully.")
+
+        return garment
 
     def save_rating(self, rating_json, fields, peer):
         if type(rating_json) == str:
