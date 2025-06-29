@@ -24,30 +24,32 @@ This will start the server on the specified host and port, allowing clients to c
 """
 
 from __future__ import annotations
-from src.server.pipeline_controller import PipelineController
-from src.server.utils import *
-from websockets import WebSocketServerProtocol, serve
-from torchvision import transforms
-from PIL import Image
-import torch
-from pathlib import Path
-import json
-import asyncio
-import argparse
 
-import logging
 import os
 import sys
 
 # Add the project root directory to the Python path
-project_root = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../"))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 sys.path.insert(0, project_root)
 
 
 sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
 sys.path.insert(0, os.path.abspath("./building_blocks/sd3_5"))
 
+
+import argparse
+import asyncio
+import json
+import logging
+from pathlib import Path
+
+import torch
+from PIL import Image
+from torchvision import transforms
+from websockets import WebSocketServerProtocol, serve
+
+from src.server.pipeline_controller import PipelineController
+from src.server.utils import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -102,7 +104,9 @@ async def _handle_client(ws: WebSocketServerProtocol):
                     if not await field_exist(ws, logger, request, "image", cur_action):
                         continue
 
-                    if not await check_field_type(ws, logger, request, "image", cur_action):
+                    if not await check_field_type(
+                        ws, logger, request, "image", cur_action
+                    ):
                         continue
 
                     image_data = request["image"]
@@ -123,24 +127,33 @@ async def _handle_client(ws: WebSocketServerProtocol):
                     if not await field_exist(ws, logger, request, "prompt", cur_action):
                         continue
 
-                    if not await check_field_type(ws, logger, request, "prompt", cur_action):
+                    if not await check_field_type(
+                        ws, logger, request, "prompt", cur_action
+                    ):
                         continue
 
                     prompt = request["prompt"]
-                    logger.info(
-                        "Background removal requested with prompt: %s", prompt)
+                    logger.info("Background removal requested with prompt: %s", prompt)
 
                     bg_rm_result = _controller.remove_background(prompt)
-                    if not await check_block_response(ws, logger, bg_rm_result, "background_remover", cur_action):
+                    if not await check_block_response(
+                        ws, logger, bg_rm_result, "background_remover", cur_action
+                    ):
                         continue
 
                     harmonized_img = _controller.harmonize_image()
 
-                    if not await check_block_response(ws, logger, harmonized_img, "harmonizer", cur_action):
+                    if not await check_block_response(
+                        ws, logger, harmonized_img, "harmonizer", cur_action
+                    ):
                         continue
 
-                    await send_action_succ(ws, logger, cur_action,
-                                           "Background removed and image harmonized.")
+                    await send_action_succ(
+                        ws,
+                        logger,
+                        cur_action,
+                        "Background removed and image harmonized.",
+                    )
                     continue
 
                 case "design":
@@ -148,30 +161,45 @@ async def _handle_client(ws: WebSocketServerProtocol):
                     if not await field_exist(ws, logger, request, "prompt", cur_action):
                         continue
 
-                    if not await check_field_type(ws, logger, request, "prompt", cur_action):
+                    if not await check_field_type(
+                        ws, logger, request, "prompt", cur_action
+                    ):
                         continue
 
                     prompt = request["prompt"]
-                    logger.info(
-                        "Garment design requested with prompt: %s", prompt)
+                    logger.info("Garment design requested with prompt: %s", prompt)
                     garment = _controller.design_garment(prompt, auto=True)
 
-                    if not await check_block_response(ws, logger, garment, "garment_generator", cur_action):
+                    if not await check_block_response(
+                        ws, logger, garment, "garment_generator", cur_action
+                    ):
                         continue
 
                     await send_action_succ(
-                        ws, logger, cur_action, "Designed cloth successfully.", tensor_to_base64_png(garment))
+                        ws,
+                        logger,
+                        cur_action,
+                        "Designed cloth successfully.",
+                        tensor_to_base64_png(garment),
+                    )
                     continue
 
                 case "fit":
                     cur_action = "fit"
                     fitted_img = _controller.fit_garment()
 
-                    if not await check_block_response(ws, logger, fitted_img, "stable_viton", cur_action):
+                    if not await check_block_response(
+                        ws, logger, fitted_img, "stable_viton", cur_action
+                    ):
                         continue
 
                     await send_action_succ(
-                        ws, logger, cur_action, "Garment fitting completed successfully.", tensor_to_base64_png(fitted_img))
+                        ws,
+                        logger,
+                        cur_action,
+                        "Garment fitting completed successfully.",
+                        tensor_to_base64_png(fitted_img),
+                    )
 
                     continue
 
@@ -181,7 +209,9 @@ async def _handle_client(ws: WebSocketServerProtocol):
                     if not await field_exist(ws, logger, request, "prompt", cur_action):
                         continue
 
-                    if not await check_field_type(ws, logger, request, "prompt", cur_action):
+                    if not await check_field_type(
+                        ws, logger, request, "prompt", cur_action
+                    ):
                         continue
 
                     prompt = request["prompt"]
@@ -189,19 +219,30 @@ async def _handle_client(ws: WebSocketServerProtocol):
                     topk = 5
                     if "topk" in request:
                         topk = int(request["topk"])
-                        logger.info("got 'topk' for search_garment: %s",
-                                    request["topk"])
+                        logger.info(
+                            "got 'topk' for search_garment: %s", request["topk"]
+                        )
 
                     logger.info(
-                        "Garment design requested with search_prompt: %s and topk: %s", prompt, str(topk))
+                        "Garment design requested with search_prompt: %s and topk: %s",
+                        prompt,
+                        str(topk),
+                    )
                     # todo:: change
                     garment = _controller.search_garment(prompt, topk)
 
-                    if not await check_block_response(ws, logger, garment, "garment_search", cur_action):
+                    if not await check_block_response(
+                        ws, logger, garment, "garment_search", cur_action
+                    ):
                         continue
 
-                    await send_action_succ(ws, logger, cur_action,
-                                           "search_garment successfully.", image=json.dumps(garment))
+                    await send_action_succ(
+                        ws,
+                        logger,
+                        cur_action,
+                        "search_garment successfully.",
+                        image=json.dumps(garment),
+                    )
                     continue
 
                 case "choose_garment":
@@ -209,7 +250,9 @@ async def _handle_client(ws: WebSocketServerProtocol):
                     if not await field_exist(ws, logger, request, "image", cur_action):
                         continue
 
-                    if not await check_field_type(ws, logger, request, "image", cur_action):
+                    if not await check_field_type(
+                        ws, logger, request, "image", cur_action
+                    ):
                         continue
 
                     image_data = request["image"]
@@ -246,13 +289,13 @@ async def _handle_client(ws: WebSocketServerProtocol):
                         continue
 
                     _controller.save_rating(request["rating"], fields, peer)
-                    await send_action_succ(ws, logger, cur_action,
-                                           "Successfully saved rating!")
+                    await send_action_succ(
+                        ws, logger, cur_action, "Successfully saved rating!"
+                    )
                     continue
 
                 case default:
-                    await send_action_err(ws, logger, "unkown",
-                                          "action was not found!")
+                    await send_action_err(ws, logger, "unkown", "action was not found!")
                     continue
 
     except Exception as exc:  # noqa: BLE001
@@ -269,8 +312,9 @@ async def _handle_client(ws: WebSocketServerProtocol):
 
 async def check_request_data(ws, logger, message, fields):
     if isinstance(message, bytes):
-        await send_action_err(ws, logger, "unkown",
-                              "Binary frames not allowed for commands.")
+        await send_action_err(
+            ws, logger, "unkown", "Binary frames not allowed for commands."
+        )
         return (False, None)
 
     try:
@@ -307,18 +351,17 @@ async def check_field_type(ws, logger, request, field, action):
 
 async def check_block_response(ws, logger, response, block, action):
     if type(response) is str:
-        err_msg = "Block: '{block}' failed: {err}".format(
-            block=block, err=response)
+        err_msg = "Block: '{block}' failed: {err}".format(block=block, err=response)
         await send_action_err(ws, logger, action, err_msg)
         return False
     return True
+
 
 # --------------------------- Entry point ----------------------------------- #
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Single‑client image WebSocket server")
+    parser = argparse.ArgumentParser(description="Single‑client image WebSocket server")
     parser.add_argument(
         "--host", default="localhost", help="Host to bind (default: localhost)"
     )
