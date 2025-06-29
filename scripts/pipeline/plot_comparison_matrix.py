@@ -1,3 +1,4 @@
+import logging
 import os
 import pathlib
 import sys
@@ -10,6 +11,8 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 sys.path.append(root_dir)
 
 from src.utilities import image_utils, path_utils
+
+logging.basicConfig(level=logging.INFO)
 
 
 def plot_comparison_matrix(
@@ -85,13 +88,15 @@ def plot_comparison_matrix(
     plt.close()
 
 
-original_img_dir = pathlib.Path("./data/img")
-original_garment_dir = pathlib.Path("./data/cloth")
-fitted_img_dir = pathlib.Path("./results/matrix/img_fitted")
-output_file = pathlib.Path("./results/matrix/final_comparison.jpg")
-background_dir = pathlib.Path("./data/background")
+base_dir = "data/vitonhd"
+original_img_dir = pathlib.Path(f"{base_dir}/img")
+original_garment_dir = pathlib.Path(f"{base_dir}/cloth")
+fitted_img_dir = pathlib.Path(f"{base_dir}/img_fitted")
+output_file = pathlib.Path(f"{base_dir}/final_comparison.jpg")
+background_dir = pathlib.Path(f"{base_dir}/background")
 background_img = "background_2032.png"
 
+logging.info("Loading images and garments for comparison...")
 images = path_utils.read_images_from_dir(
     original_img_dir, transform=image_utils.stable_vition_image_transformation
 )
@@ -100,11 +105,13 @@ fitted_images = path_utils.read_images_from_dir(fitted_img_dir)
 backgrounds = path_utils.read_images_from_dir(background_dir)
 background = backgrounds[background_img]
 
+
 # Sort the dictionaries by image name and extract the sorted tensors
 images = [tensor for name, tensor in sorted(images.items())]
 garments = [tensor for name, tensor in sorted(garments.items())]
 images_fitted = [tensor for name, tensor in sorted(fitted_images.items())]
 
+logging.info("Plotting comparison matrix...")
 plot_comparison_matrix(
     original_images=images,
     original_garments=garments,
@@ -112,3 +119,4 @@ plot_comparison_matrix(
     background_image=background,
     output_file=str(output_file),
 )
+logging.info(f"Comparison matrix saved to {output_file}")

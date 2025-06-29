@@ -30,7 +30,7 @@ DEVICE = "cpu"
 
 def run():
     # Input paths
-    img_dir = pathlib.Path("./eval/input/imgs")
+    img_dir = pathlib.Path("./eval/input/imgs_zalando")
     bg_prompts_file = pathlib.Path("./eval/input/prompts/background_prompts.txt")
     garment_prompts_file = pathlib.Path(
         "./eval/input/prompts/garment_prompts_generated.csv"
@@ -170,6 +170,13 @@ def run():
         image_utils.save_image(dense_pose_img, filename)
 
     dense_pose.unload_model()
+
+    # TODO: delete this
+    garment_dir = pathlib.Path("./data/vitonhd/cloth")
+    garments = path_utils.read_images_from_dir(garment_dir)
+    garments = list([tensor for name, tensor in sorted(garments.items())])[
+        : start_idx + max_images
+    ]
 
     # Garment Masking
     foreground_masking = ForegroundMasking()

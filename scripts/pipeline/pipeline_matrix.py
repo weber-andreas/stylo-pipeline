@@ -26,24 +26,20 @@ DEVICE = "cpu"
 
 def run():
     # Input paths
-    img_dir = pathlib.Path("./data/img")
-    fullbody_mask_dir = pathlib.Path("./data/fullbody_mask")
-    cloth_dir = pathlib.Path("./data/cloth")
-    cloth_mask_dir = pathlib.Path("./data/cloth_mask")
-    dense_pose_dir = pathlib.Path("./data/densepose")
-    agn_mask_dir = pathlib.Path("./data/agnostic_mask")
-    batckgroud_dir = pathlib.Path("data/background")
+    base_dir = pathlib.Path("./data/vitonhd")
+    img_dir = pathlib.Path(f"{base_dir}/img")
+    fullbody_mask_dir = pathlib.Path(f"{base_dir}/fullbody_mask")
+    cloth_dir = pathlib.Path(f"{base_dir}/cloth")
+    cloth_mask_dir = pathlib.Path(f"{base_dir}/cloth_mask")
+    dense_pose_dir = pathlib.Path(f"{base_dir}/densepose")
+    agn_mask_dir = pathlib.Path(f"{base_dir}/agnostic_mask")
+    batckgroud_dir = pathlib.Path(f"{base_dir}/background")
     background_img = "background_2032.png"
 
     # Output paths
-    output_dir = pathlib.Path("./results/matrix")
-    background_replaced_dir = pathlib.Path(f"{output_dir}/img_bg_replaced")
-    img_fitted_dir = pathlib.Path(f"{output_dir}/img_fitted")
-    output_file = pathlib.Path(f"{output_dir}/final_comparison.txt")
+    img_fitted_dir = pathlib.Path(f"{base_dir}/img_fitted")
 
     output_dirs = [
-        output_dir,
-        background_replaced_dir,
         img_fitted_dir,
     ]
     for output_dir in output_dirs:
@@ -78,10 +74,10 @@ def run():
         img_replaced = img_replaced.squeeze(0)
         img_bg_replaced.append(img_replaced)
 
-        pil_img = image_utils.tensor_to_image(img_replaced)
-        image_utils.save_image(
-            pil_img, str(background_replaced_dir / f"img_bg_replaced_{i:04d}.png")
-        )
+        # pil_img = image_utils.tensor_to_image(img_replaced)
+        # image_utils.save_image(
+        #     pil_img, str(background_replaced_dir / f"img_bg_replaced_{i:04d}.png")
+        # )
 
     # Harmonize Images
     logger.info("Harmonizing images...")
