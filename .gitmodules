@@ -1,6 +1,6 @@
 [submodule "building_blocks/StableVITON"]
 	path = building_blocks/StableVITON
-	url = https://github.com/rlawjdghek/StableVITON.git
+	url = https://github.com/Spatenfe/StableVITON.git
 [submodule "building_blocks/photo-background-generation"]
 	path = building_blocks/photo-background-generation
 	url = https://github.com/yahoo/photo-background-generation.git
