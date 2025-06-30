@@ -239,13 +239,13 @@ async def _handle_client(ws: WebSocketServerProtocol):
                         ws, logger, garment, "garment_search", cur_action
                     ):
                         continue
-
+                    
                     await send_action_succ(
                         ws,
                         logger,
                         cur_action,
                         "search_garment successfully.",
-                        image=json.dumps(garment),
+                        image=garment,
                     )
                     continue
 

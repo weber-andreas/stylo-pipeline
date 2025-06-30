@@ -18,6 +18,8 @@ def compute_similarity(
     image_features /= image_features.norm(dim=-1, keepdim=True)
     text_features /= text_features.norm(dim=-1, keepdim=True)
 
+    image_features = image_features.float()  # Ensure float type
+    text_features = text_features.float()  # Ensure float type
     # Compute cosine similarity, dot product of normalized vectors
     similarities = (image_features @ text_features.T).squeeze()
     return similarities
@@ -72,7 +74,7 @@ class SearchGarment(BaseBlock):
 
     def load_model(self):
         """Load the model"""
-        self.model, _ = clip.load("ViT-B/32", device=self.device)
+        self.model, _ = clip.load("ViT-B/32")
         logger.info("Clip model loaded successfully.")
         self.is_loaded = True
 
@@ -99,7 +101,7 @@ class SearchGarment(BaseBlock):
     def tokenize(self, texts):
         """Tokenize text using the CLIP model."""
 
-        return clip.tokenize(texts).to(self.device)
+        return clip.tokenize(texts)
 
     def load_image_embeddings(self, path: str) -> dict:
         """Load precomputed image embeddings from a file."""
@@ -119,11 +121,11 @@ class SearchGarment(BaseBlock):
         logger.info(f"Image embeddings saved to {path}.")
 
     def __call__(self, prompt, topk, min_sim=None):
-        text_features = self.encode_text(self.tokenize([prompt]))
+        text_features = self.encode_text(self.tokenize([prompt]).cuda())
         image_features = self.load_image_embeddings(self.img_emb_path)
 
         sim_scores = compute_similarity(image_features=image_features["features"],
-                                        text_features=text_features)
+                                        text_features=text_features.cpu())
 
         image_features["features"] = sim_scores
         sorted_results = get_highest_similarities(

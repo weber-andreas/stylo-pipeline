@@ -5,6 +5,8 @@ Application of Vision Foundation Models for image editing and Virtual Try-On (VI
 ## Pipeline Architecture
 ![Image of Pipeline Architecture](./assets/pipeline_architecture.svg "Illustration of pipeline architecture")
 
+##
+DATASET needed https://drive.google.com/file/d/1tLx8LRp-sxDp0EcYmYoV_vXdSc-jJ79w/view
 
 ## Pipeline Components
 We utilize several publicly available image editing models like:
