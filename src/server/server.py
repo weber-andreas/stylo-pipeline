@@ -22,34 +22,35 @@ python server.py --host localhost --port 8765
 This will start the server on the specified host and port, allowing clients to connect and interact with the image processing pipeline.
 
 """
-
 from __future__ import annotations
 
 import os
 import sys
 
-# Add the project root directory to the Python path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+project_root = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../../"))
 sys.path.insert(0, project_root)
 
 
 sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
 sys.path.insert(0, os.path.abspath("./building_blocks/sd3_5"))
 
-
-import argparse
-import asyncio
-import json
-import logging
-from pathlib import Path
-
-import torch
-from PIL import Image
-from torchvision import transforms
-from websockets import WebSocketServerProtocol, serve
-
-from src.server.pipeline_controller import PipelineController
 from src.server.utils import *
+from src.server.pipeline_controller import PipelineController
+from websockets import WebSocketServerProtocol, serve
+from torchvision import transforms
+from PIL import Image
+import torch
+from pathlib import Path
+import logging
+import json
+import asyncio
+import argparse
+
+
+# Add the project root directory to the Python path
+
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -133,7 +134,8 @@ async def _handle_client(ws: WebSocketServerProtocol):
                         continue
 
                     prompt = request["prompt"]
-                    logger.info("Background removal requested with prompt: %s", prompt)
+                    logger.info(
+                        "Background removal requested with prompt: %s", prompt)
 
                     bg_rm_result = _controller.remove_background(prompt)
                     if not await check_block_response(
@@ -153,6 +155,7 @@ async def _handle_client(ws: WebSocketServerProtocol):
                         logger,
                         cur_action,
                         "Background removed and image harmonized.",
+                        image=tensor_to_base64_png(harmonized_img)
                     )
                     continue
 
@@ -167,7 +170,8 @@ async def _handle_client(ws: WebSocketServerProtocol):
                         continue
 
                     prompt = request["prompt"]
-                    logger.info("Garment design requested with prompt: %s", prompt)
+                    logger.info(
+                        "Garment design requested with prompt: %s", prompt)
                     garment = _controller.design_garment(prompt, auto=True)
 
                     if not await check_block_response(
@@ -351,7 +355,8 @@ async def check_field_type(ws, logger, request, field, action):
 
 async def check_block_response(ws, logger, response, block, action):
     if type(response) is str:
-        err_msg = "Block: '{block}' failed: {err}".format(block=block, err=response)
+        err_msg = "Block: '{block}' failed: {err}".format(
+            block=block, err=response)
         await send_action_err(ws, logger, action, err_msg)
         return False
     return True
@@ -361,7 +366,8 @@ async def check_block_response(ws, logger, response, block, action):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Single‑client image WebSocket server")
+    parser = argparse.ArgumentParser(
+        description="Single‑client image WebSocket server")
     parser.add_argument(
         "--host", default="localhost", help="Host to bind (default: localhost)"
     )

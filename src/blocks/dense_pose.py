@@ -11,9 +11,8 @@ from src.blocks.base_block import BaseBlock
 class DensePose(BaseBlock):
     """Base class for fitting models."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ram_preload=False, run_on_gpu=False):
         # https://huggingface.co/bdsager/CatVTON/blob/f2d92bc453badfbcc045127c18ce6b48ceffbf28/DensePose/model_final_162be9.pkl
-        super().__init__(*args, **kwargs)
         self.predictor = None
         self.cfg = get_cfg()
         add_densepose_config(self.cfg)
@@ -26,7 +25,13 @@ class DensePose(BaseBlock):
             "./building_blocks/detectron2/model_final_162be9.pkl"  # downloaded model
         )
         self.cfg.MODEL.DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
         self.is_loaded = False
+        self.ram_preload = ram_preload
+        self.run_on_gpu = run_on_gpu
+
+        if ram_preload:
+            self.load_model()
 
     def unload_model(self):
         """Unload the model if it exists."""
@@ -37,7 +42,6 @@ class DensePose(BaseBlock):
         del self.predictor
         torch.cuda.empty_cache()
         self.is_loaded = False
-
 
     def load_model(self):
         """Load the model."""

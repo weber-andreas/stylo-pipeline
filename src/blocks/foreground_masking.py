@@ -1,14 +1,15 @@
+from src.utilities import image_utils
+from src.blocks.base_block import BaseBlock
+from transparent_background import Remover
 import logging
 import os
 import sys
 
 import torch
 
-sys.path.insert(0, os.path.abspath("./building_blocks/photo-background-generation"))
-from transparent_background import Remover
+sys.path.insert(0, os.path.abspath(
+    "./building_blocks/photo-background-generation"))
 
-from src.blocks.base_block import BaseBlock
-from src.utilities import image_utils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -17,16 +18,22 @@ logger.setLevel(logging.INFO)
 class ForegroundMasking(BaseBlock):
     """Removes the background of an image."""
 
-    def __init__(self):
+    def __init__(self, ram_preload=False, run_on_gpu=False):
         self.remover = Remover()
+
         self.is_loaded = False
+        self.ram_preload = ram_preload
+        self.run_on_gpu = run_on_gpu
+
+        if ram_preload:
+            self.load_model()
 
     def unload_model(self):
         """Unload the model if it exists."""
         if self.remover is not None:
             del self.remover
             logger.info("Background Remover model unloaded.")
-        
+
         torch.cuda.empty_cache()
         self.is_loaded = False
 

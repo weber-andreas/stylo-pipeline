@@ -15,12 +15,18 @@ logger.setLevel(logging.INFO)
 class Masking(BaseBlock):
     """Base class for fitting models."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, ram_preload=False, run_on_gpu=False):
+        super().__init__()
         self.checkpoint = "./building_blocks/sam/checkpoints/sam2.1_hiera_tiny.pt"
         self.model_cfg = "./building_blocks/sam/configs/sam2.1/sam2.1_hiera_t.yaml"
         self.lang_sam: LangSAM | None = None
+
         self.is_loaded = False
+        self.ram_preload = ram_preload
+        self.run_on_gpu = run_on_gpu
+
+        if ram_preload:
+            self.load_model()
 
     def unload_model(self):
         """Unload the model if it exists."""
@@ -51,10 +57,12 @@ class Masking(BaseBlock):
 
         # image_pil = Image.open(img).convert("RGB")
         # image_tensor = torch.from_numpy(np.array(image_pil)).permute(2, 0, 1) / 255
-        image_pil = Image.fromarray((img.permute(1, 2, 0) * 255).byte().cpu().numpy())
+        image_pil = Image.fromarray(
+            (img.permute(1, 2, 0) * 255).byte().cpu().numpy())
         image_tensor = img
 
-        valid_result = lambda x: x and "masks" in x[0] and len(x[0]["masks"]) > 0
+        def valid_result(x): return x and "masks" in x[0] and len(
+            x[0]["masks"]) > 0
 
         text_prompt_person = "person."
         results = self.lang_sam.predict([image_pil], [text_prompt_person])
@@ -151,6 +159,5 @@ class Masking(BaseBlock):
 
         agn_mask = torch.clone(image_tensor)
         agn_mask[:, mask[0] > 0] = 0.5
-
 
         return image_tensor, person_mask, agn_mask, mask

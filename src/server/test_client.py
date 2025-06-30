@@ -66,10 +66,9 @@ async def main(uri):
             resp = await send_action(ws, "UPLOAD", image=data)
             print("Upload response:", resp)
 
-        resp = await send_action(ws, "design", prompt="yellow polo shirt", topk=1)
-        if resp.get("image"):
-            resp["image"] = json.loads(resp["image"])
-        print("Search response:", resp)
+        resp = await send_action(ws, "design", prompt="yellow polo shirt")
+        print(resp["image"])
+
         """# 2. Upload an image
         with open("src/server/example_transfers/happy-young-man-standing-over-white-background-KCKEH1.jpg", "rb") as image_file:
             data = base64.b64encode(image_file.read())
@@ -99,4 +98,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
     uri = f"ws://{args.host}:{args.port}"
+    asyncio.run(main(uri))
+    time.sleep(25)
+    print("run")
     asyncio.run(main(uri))

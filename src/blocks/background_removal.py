@@ -1,3 +1,9 @@
+from src.utilities import image_utils
+from src.blocks.base_block import BaseBlock
+from transparent_background import Remover
+from torchvision import transforms
+from PIL import Image, ImageOps
+from diffusers import DiffusionPipeline
 import gc
 import logging
 import os
@@ -5,14 +11,9 @@ import sys
 
 import torch
 
-sys.path.insert(0, os.path.abspath("./building_blocks/photo-background-generation"))
-from diffusers import DiffusionPipeline
-from PIL import Image, ImageOps
-from torchvision import transforms
-from transparent_background import Remover
+sys.path.insert(0, os.path.abspath(
+    "./building_blocks/photo-background-generation"))
 
-from src.blocks.base_block import BaseBlock
-from src.utilities import image_utils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -21,12 +22,17 @@ logger.setLevel(logging.INFO)
 class BackgroundRemover(BaseBlock):
     """Removes background from images using photo-background-generation."""
 
-    def __init__(self, device="cuda"):
+    def __init__(self, ram_preload=False, run_on_gpu=False):
         self.model_name = "yahoo-inc/photo-background-generation"
         self.remover: Remover | None = None
         self.diffusion_pipeline: DiffusionPipeline | None = None
-        self.device = device
+
         self.is_loaded = False
+        self.ram_preload = ram_preload
+        self.run_on_gpu = run_on_gpu
+
+        if ram_preload:
+            self.load_model()
 
     def unload_model(self):
         """Unload the model if it exists."""
@@ -53,7 +59,8 @@ class BackgroundRemover(BaseBlock):
             self.model_name, custom_pipeline=self.model_name
         )
         self.diffusion_pipeline = self.diffusion_pipeline.to(self.device)
-        logger.info("Diffusion pipeline for background removal loaded successfully.")
+        logger.info(
+            "Diffusion pipeline for background removal loaded successfully.")
         self.is_loaded = True
 
     def __call__(
@@ -91,7 +98,8 @@ class BackgroundRemover(BaseBlock):
                 )
             if results_dir is not None:
                 image_utils.save_image(
-                    subject_mask, os.path.join(results_dir, "foreground_mask.png")
+                    subject_mask, os.path.join(
+                        results_dir, "foreground_mask.png")
                 )
 
         # Background generation
@@ -125,10 +133,12 @@ class BackgroundRemover(BaseBlock):
                 )
             if save_background and results_dir is not None:
                 image_utils.save_image(
-                    image, os.path.join(results_dir, f"background_image_{i}.png")
+                    image, os.path.join(
+                        results_dir, f"background_image_{i}.png")
                 )
 
-        image = image_utils.image_to_tensor(images[0])  # Use the first generated image
+        image = image_utils.image_to_tensor(
+            images[0])  # Use the first generated image
         resize_transform = transforms.Resize(result_shape)
         image = resize_transform(image)
         return image

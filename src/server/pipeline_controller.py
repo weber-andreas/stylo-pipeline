@@ -29,8 +29,8 @@ class PipelineController:
         self.fitter = Fitter()
         self.cloth_masking = ForegroundMasking()
         # self.background_remover = BackgroundRemover(device=device)
-        self.image_generator = SDImageGenerator(device=device)
-        self.garment_searcher = SearchGarment(device=device)
+        self.image_generator = SDImageGenerator()
+        self.garment_searcher = SearchGarment()
 
         logger.info("Init cache")
         # Initialize image cache
@@ -61,7 +61,7 @@ class PipelineController:
             logger.info(f"Block {block.__class__.__name__} is already loaded.")
 
     def unload_block(self, block):
-        if block.is_loaded:
+        if block.is_loaded and not block.ram_preload:
             block.unload_model()
             logger.info(
                 f"Block {block.__class__.__name__} unloaded successfully.")

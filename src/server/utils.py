@@ -124,3 +124,6 @@ def pad_aspect_transform(img_tensor, SIZE=(1024, 768)):
     )
 
     return transform(img_tensor)
+
+
+

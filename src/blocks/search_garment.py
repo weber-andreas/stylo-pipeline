@@ -46,15 +46,20 @@ def get_highest_similarities(
 class SearchGarment(BaseBlock):
     """OpenAS's Contrastive Language-Image Pretraining model."""
 
-    def __init__(self, device="cuda"):
+    def __init__(self, ram_preload=False, run_on_gpu=False):
         self.model_path = (
             "building_blocks/sd3_5/models/text_encoders/clip_l.safetensors"
         )
-        self.device = device
         self.model = None
-        self.is_loaded = False
         self.img_emb_path = 'data/clip_image_features.pt'
-        self.img_path = 'building_blocks/StableVITON/data/original_viton_hd/test/cloth'
+        self.img_path = 'data/original_viton_hd/test/cloth'
+
+        self.is_loaded = False
+        self.ram_preload = ram_preload
+        self.run_on_gpu = run_on_gpu
+
+        if ram_preload:
+            self.load_model()
 
     def unload_model(self):
         """Unload the model if it exists."""
