@@ -3,12 +3,13 @@ import logging
 import os
 import re
 import warnings
-
+import time
 import torch
 
 import src.utilities.image_utils as image_utils
 from building_blocks.sd3_5.sd3_infer import CONFIGS, SD3Inferencer
 from src.blocks.base_block import BaseBlock
+from src.utilities.logging_utils import log_vram
 
 logger = logging.getLogger(__name__)
 
@@ -32,19 +33,23 @@ class SDImageGenerator(BaseBlock):
     Generates images via Stable Diffusion 3.5
     """
 
-    def __init__(self, device="cuda"):
+    def __init__(self, ram_preload=True, run_on_gpu=True):
         self.model_folder = "building_blocks/sd3_5/models"
         self.inferencer = SD3Inferencer()
-        self.model_name = f"{self.model_folder}/sd3_medium.safetensors"  # "models/sd3-large/sd3.5_large.safetensors"
-        # only required for SD3.5_large
-        self.vae_file = None  # f"{self.model_folder}/sd3_vae.safetensors"
-        self.controlnet = None  # f"{self.model_folder}/controlnets/sd3.5_large_controlnet_canny.safetensors"
-        self.device = device
+        self.model_name = f"{self.model_folder}/sd3_medium.safetensors"
+        self.vae_file = None
+        self.controlnet = None
+
         self.is_loaded = False
+        self.ram_preload = ram_preload
+        self.run_on_gpu = run_on_gpu
+
+        if ram_preload:
+            self.load_model()
 
     def unload_model(self):
         """Unload the model if it exists."""
-        if self.inferencer is not None:
+        if not self.ram_preload and self.inferencer is not None:
             logger.info("Unloading GarmentGenerator model...")
             del self.inferencer
 
@@ -57,7 +62,9 @@ class SDImageGenerator(BaseBlock):
         use_controlnet=False,
         verbose=False,
     ):
-        config = CONFIGS.get(os.path.splitext(os.path.basename(self.model_name))[0], {})
+        log_vram("Before loading SD3 model to CPU", logger)
+        config = CONFIGS.get(os.path.splitext(
+            os.path.basename(self.model_name))[0], {})
         _shift = config.get("shift", 3)
 
         controlnet_ckpt = self.controlnet if use_controlnet else None
@@ -71,7 +78,7 @@ class SDImageGenerator(BaseBlock):
                 _shift,
                 controlnet_ckpt,
                 self.model_folder,
-                self.device,
+                "cpu",
                 verbose,
                 load_tokenizers=True,
             )
@@ -79,6 +86,7 @@ class SDImageGenerator(BaseBlock):
             f"GarmentGenerator model loaded: {self.model_name}, "
             f"ControlNet: {controlnet_ckpt if use_controlnet else 'None'}"
         )
+        log_vram("After loading SD3 model to CPU", logger)
         self.is_loaded = True
 
     @torch.no_grad()
@@ -97,6 +105,15 @@ class SDImageGenerator(BaseBlock):
         denoise=1.0,
         skip_layer_config=None,
     ) -> list[torch.Tensor]:
+        
+        if self.run_on_gpu:
+            log_vram("Before Loading SD3 model on GPU", logger)
+            start = time.time()
+            self.inferencer = self.inferencer.to("cuda")
+            logger.info("Moved SD3 model to GPU in %.2f seconds",
+                        time.time() - start)
+            log_vram("After Loading SD3 model on GPU", logger)
+
         skip_layer_config = CONFIGS.get(
             os.path.splitext(os.path.basename(self.model_name))[0], {}
         ).get("skip_layer_config", {})
@@ -116,6 +133,14 @@ class SDImageGenerator(BaseBlock):
             denoise=denoise,
             skip_layer_config=skip_layer_config,
         )
+
+        if self.run_on_gpu:
+            log_vram("Before unloading SD3 model from GPU", logger)
+            start = time.time()
+            self.inferencer = self.inferencer.to("cpu")
+            logger.info("Moved SD3 model to CPU in %.2f seconds",
+                time.time() - start)
+            log_vram("After unloading SD3 model from GPU", logger)
 
         # image to torch
         images = [image_utils.image_to_tensor(img) for img in imgs]

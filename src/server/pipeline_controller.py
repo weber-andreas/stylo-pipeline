@@ -29,8 +29,8 @@ class PipelineController:
         self.fitter = Fitter()
         self.cloth_masking = ForegroundMasking()
         # self.background_remover = BackgroundRemover(device=device)
-        self.image_generator = SDImageGenerator(device=device)
-        self.garment_searcher = SearchGarment(device=device)
+        self.image_generator = SDImageGenerator()
+        self.garment_searcher = SearchGarment()
 
         logger.info("Init cache")
         # Initialize image cache
@@ -61,7 +61,7 @@ class PipelineController:
             logger.info(f"Block {block.__class__.__name__} is already loaded.")
 
     def unload_block(self, block):
-        if block.is_loaded:
+        if block.is_loaded and not block.ram_preload:
             block.unload_model()
             logger.info(
                 f"Block {block.__class__.__name__} unloaded successfully.")
@@ -230,12 +230,17 @@ class PipelineController:
         self.unload_block(self.cloth_masking)
         return foreground_mask
 
-    def design_garment(self, prompt, auto=False):
+    def design_garment(self, prompt, auto=True):
 
         if self.image_cache["stock_image"] is None:
             return "Stock image not set. Please set the stock image first."
 
         self.load_block(self.image_generator)
+
+        logger.info(
+            "Current vram usage before request: %s GB",
+            round(torch.cuda.memory_allocated() / 1024**3, 2),
+        )
 
         # build promt:
         image_size = self.image_cache["stock_image"][0].shape
@@ -254,6 +259,11 @@ class PipelineController:
         garment = match_tensor_size(garment, image)
 
         self.image_cache["cloth_image"] = garment
+
+        logger.info(
+            "Current vram usage before request: %s GB",
+            round(torch.cuda.memory_allocated() / 1024**3, 2),
+        )
 
         self.unload_block(self.image_generator)
 
@@ -296,7 +306,18 @@ class PipelineController:
                 return res
             logger.info("Auto-generated dense pose successfully.")
 
-    def set_stock_garment(self, garment, aut=True)
+    def set_stock_garment(self, garment, auto=True):
+        self.image_cache["cloth_image"] = None
+        self.image_cache["cloth_mask"] = None
+        self.image_cache["cloth_image"] = garment
+
+        if auto:
+            logger.info(
+                "Auto-generating cloth masks after setting stock garment...")
+            self.get_cloth_mask()
+            logger.info("Auto-generated cloth masks successfully.")
+
+        return garment
 
     def save_rating(self, rating_json, fields, peer):
         if type(rating_json) == str:
