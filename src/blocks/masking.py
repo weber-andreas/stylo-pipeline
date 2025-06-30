@@ -153,11 +153,11 @@ class Masking(BaseBlock):
 
         mask_np = (mask.squeeze().cpu().numpy() * 255).astype(np.uint8)
         kernel = np.ones((5, 5), np.uint8)
-        eroded = cv2.erode(mask_np, kernel, iterations=2)
+        eroded = cv2.erode(mask_np, kernel, iterations=5)
         dilated = cv2.dilate(eroded, kernel, iterations=5)
         eroded = (torch.from_numpy(dilated).float() / 255).unsqueeze(0)
-
+       
         agn_mask = torch.clone(image_tensor)
-        agn_mask[:, mask[0] > 0] = 0.5
+        agn_mask[:, eroded[0] > 0] = 0.5
 
-        return image_tensor, person_mask, agn_mask, mask
+        return image_tensor, person_mask, agn_mask, eroded

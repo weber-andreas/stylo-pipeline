@@ -77,7 +77,7 @@ def run():
         output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info("Loading Stable Diffusion Image Generator...")
-    image_generator = SDImageGenerator(device=DEVICE)
+    image_generator = SDImageGenerator()
     image_generator.load_model(verbose=False)
 
     # generate garments
@@ -172,7 +172,7 @@ def run():
     dense_pose.unload_model()
 
     # TODO: delete this
-    garment_dir = pathlib.Path("./data/vitonhd/cloth")
+    garment_dir = pathlib.Path("./eval/input/cloth")
     garments = path_utils.read_images_from_dir(garment_dir)
     garments = list([tensor for name, tensor in sorted(garments.items())])[
         : start_idx + max_images
