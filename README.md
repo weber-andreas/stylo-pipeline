@@ -1,12 +1,11 @@
 # STYLO-Pipeline: Semantic Transformation of your looks and outfits
 Application of Vision Foundation Models for image editing and Virtual Try-On (VITON).
 
+![Image of Pipeline Architecture](./assets/final_comparison.jpg "Illustration of pipeline architecture")
 
 ## Pipeline Architecture
 ![Image of Pipeline Architecture](./assets/pipeline_architecture.svg "Illustration of pipeline architecture")
 
-##
-DATASET needed https://drive.google.com/file/d/1tLx8LRp-sxDp0EcYmYoV_vXdSc-jJ79w/view
 
 ## Pipeline Components
 We utilize several publicly available image editing models like:
@@ -17,6 +16,9 @@ We utilize several publicly available image editing models like:
 - [x] Garment Prompt Generation: LLaVA combines language understanding with vision capabilities [Llava](https://huggingface.co/llava-hf/llava-1.5-7b-hf) 
 - [x] Fit Garment: KAIST Research Group, South Korea VITON model [StableVITON](https://github.com/rlawjdghek/StableVITON)
 
+
+## Dataset
+Link to the official [VitonHD Dataset](https://drive.google.com/file/d/1tLx8LRp-sxDp0EcYmYoV_vXdSc-jJ79w/view)
 
 ## Setup
 ### Install environment
