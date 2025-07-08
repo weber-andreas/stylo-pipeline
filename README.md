@@ -66,7 +66,7 @@ conda activate stylo-pipeline
 1. go in stylo-pipeline root dir
 2. allocate hardware. Check availability at https://adm9.in.tum.de/slurm with I=Idle T=total and U=used
 ```
-srun --gpus=1 --mem=64G --gres=gpu:1,VRAM:24G --cpus-per-task=8 --time=5:00:00 --pty zsh
+srun --gpus=1 --mem=64G --gres=gpu:1,VRAM:24G --cpus-per-task=8 --time=5:00:00 --part=PRACT --qos=practical_course --pty zsh 
 ```
 3. run startup script 
 ```
