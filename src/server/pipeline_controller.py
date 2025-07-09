@@ -293,6 +293,7 @@ class PipelineController:
         }
         logger.info("Setting stock image...")
         self.image_cache["stock_image"] = img
+        self.image_cache["harmonized_image"] = img
         logger.info("Stock image set successfully.")
 
         if auto:
