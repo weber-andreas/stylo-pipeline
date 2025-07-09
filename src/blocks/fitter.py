@@ -49,7 +49,7 @@ class Fitter(BaseBlock):
     def unload_model(self):
         """Unload the model if it exists."""
         if self.model is None:
-            print("Model not loaded. Won't unload.")
+            logger.info("Model not loaded. Won't unload.")
             return
 
         if not self.ram_preload:
@@ -67,14 +67,14 @@ class Fitter(BaseBlock):
         ) else load_cp
         self.model.load_state_dict(load_cp)
         self.model.eval()
-        print("Model loaded successfully. Load sampler now")
+        logger.info("Model loaded successfully. Load sampler now")
         self.sampler = PLMSSampler(self.model)
         self.is_loaded = True
 
     def __call__(self, agn_mask, cloth, cloth_mask, image, dense_pose):
         """Fit cloth"""
         if self.model is None:
-            print("Model not loaded. Call load_model() first.")
+            logger.warning("Model not loaded. Call load_model() first.")
             return None
         mask = agn_mask
         agn = torch.clone(image)
@@ -119,8 +119,7 @@ class Fitter(BaseBlock):
         ts = torch.full((1,), 999, device=z.device, dtype=torch.long)
         start_code = self.model.q_sample(z, ts)
 
-        print("Took %.2f seconds from loading until start of sampling", time.time() - start)
-        print("Sampling...")
+        logger.info("Took %.2f seconds from loading until start of sampling Sampling...", time.time() - start)
         start = time.time()
         
         samples, _, _ = self.sampler.sample(
@@ -134,7 +133,7 @@ class Fitter(BaseBlock):
             unconditional_conditioning=uc_full,
         )
         
-        print("Took %.2f seconds for sampling", time.time() - start)
+        logger.info("Took %.2f seconds for sampling", time.time() - start)
         start = time.time()
 
         x_samples = self.model.decode_first_stage(samples)
@@ -145,7 +144,7 @@ class Fitter(BaseBlock):
         result[:, :, 2] = x_sample_img[:, :, 0]
         result = torch.from_numpy(result)
         
-        print("Took %.2f seconds after sampling", time.time() - start)
+        logger.info("Took %.2f seconds after sampling", time.time() - start)
 
         if self.run_on_gpu:
             log_vram("Before unloading StableVITON model from GPU", logger)
@@ -162,11 +161,11 @@ class Fitter(BaseBlock):
         """Transform the input data into the format required by the model."""
         for k, v in raw_in.items():
             if type(v) is not torch.Tensor:
-                print(
+                logger.warning(
                     f"Warning: {k} is not a torch.Tensor, skipping transformation.")
                 print(v)
             else:
-                print(f"Transforming {k} with shape {v.shape}")
+                #print(f"Transforming {k} with shape {v.shape}")
                 raw_in[k] = v.permute((1, 2, 0)).unsqueeze(0)
-                print("---> to shape", raw_in[k].shape)
+                #print("---> to shape", raw_in[k].shape)
         return raw_in

@@ -150,7 +150,6 @@ class PipelineController:
 
         result = image * mask + background * (1 - mask)
         result = result.squeeze(0)
-        print(f"Result shape after squeeze: {result.shape}")
 
         self.image_cache["background_removed_image"] = result
         logger.info("Background removed successfully.")
@@ -244,7 +243,6 @@ class PipelineController:
 
         # build promt:
         image_size = self.image_cache["stock_image"][0].shape
-        print(f"Image size: {image_size}")
         prompt = (
             prompt
             + " neatly hung in front of a white wall, isolated product shot, studio lighting, realistic texture, garment fully visible, photo-realistic, entire garment visible, garmen centered, size m"

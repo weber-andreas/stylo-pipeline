@@ -144,5 +144,5 @@ class SDImageGenerator(BaseBlock):
 
         # image to torch
         images = [image_utils.image_to_tensor(img) for img in imgs]
-        print("shape of images:", [img.shape for img in images])
+        #print("shape of images:", [img.shape for img in images])
         return images

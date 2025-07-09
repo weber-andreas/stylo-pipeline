@@ -4,9 +4,14 @@ import torch
 from densepose import add_densepose_config
 from detectron2.config import get_cfg
 from detectron2.engine import DefaultPredictor
+import sys
+import os
+import logging
 
 from src.blocks.base_block import BaseBlock
 
+sys.path.insert(0, os.path.abspath("./building_blocks/StableVITON"))
+logger = logging.getLogger(__name__)
 
 class DensePose(BaseBlock):
     """Base class for fitting models."""
@@ -36,7 +41,7 @@ class DensePose(BaseBlock):
     def unload_model(self):
         """Unload the model if it exists."""
         if self.predictor == None:
-            print("DensePose not laoded. Won't unload.")
+            logger.warning("DensePose not laoded. Won't unload.")
             return
 
         del self.predictor
@@ -45,7 +50,7 @@ class DensePose(BaseBlock):
 
     def load_model(self):
         """Load the model."""
-        print("Create/load DensePose Predictor...")
+        logger.info("Create/load DensePose Predictor...")
         self.predictor = DefaultPredictor(self.cfg)
         self.is_loaded = True
 
