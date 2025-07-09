@@ -85,44 +85,31 @@ async def send_action_war(ws, logger, action, message, image=""):
     await ws.send(build_response_str(action, "error", message, image))
 
 
-def pad_to_aspect(img: Image.Image, target_size=(1024, 768)) -> Image.Image:
-    target_aspect = target_size[0] / target_size[1]  # width / height
-    width, height = img.size
-    current_aspect = width / height
+def resize_to_aspect(img: Image.Image, target_size=(1024, 768)) -> Image.Image:
+    img_width = img.width
+    img_height = img.height
 
-    if current_aspect == target_aspect:
-        return img
+    diff_height = abs(img_height - target_size[0])
+    diff_width = abs(img_width - target_size[1])
 
-    # Too narrow: pad width
-    if current_aspect < target_aspect:
-        new_width = int(target_aspect * height)
-        pad_total = new_width - width
-        pad_left = pad_total // 2
-        pad_right = pad_total - pad_left
-        new_img = Image.new(img.mode, (new_width, height), color=(255, 255, 255))
-        new_img.paste(img, (pad_left, 0))
-        return new_img
+    if diff_height < diff_width:
+        resize_width = int((target_size[0] / img_height) * img_width)
+        img = img.resize((resize_width, target_size[0]))
 
-    # Too wide: crop width
     else:
-        new_width = int(target_aspect * height)
-        left = (width - new_width) // 2
-        right = left + new_width
-        img_cropped = img.crop((left, 0, right, height))
-        return img_cropped
+        resize_height = int((target_size[1] / img_width) * img_height)
+        img = img.resize((target_size[1], resize_height))
+
+    return img
 
 
 def pad_aspect_transform(img_tensor, SIZE=(1024, 768)):
-
-    # Compose pipeline with custom padding, resize, and tensor conversion
     transform = transforms.Compose(
         [
             transforms.ToPILImage(),
-            transforms.Lambda(lambda img: pad_to_aspect(img, SIZE)),
-            transforms.Resize(SIZE[1]),  # Resize height
-            transforms.CenterCrop(SIZE),  # Center crop width
+            transforms.Lambda(lambda img: resize_to_aspect(img, SIZE)),
+            transforms.CenterCrop(SIZE),
             transforms.ToTensor(),
         ]
     )
-
     return transform(img_tensor)

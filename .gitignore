@@ -183,3 +183,4 @@ cython_debug/
 
 src/server/cloth_out_dir/*
 results/*
+data/original_viton_hd/test/cloth/*
