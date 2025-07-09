@@ -30,13 +30,13 @@ DEVICE = "cpu"
 
 def run():
     # Input paths
-    img_dir = pathlib.Path("./eval/input/imgs_zalando")
+    img_dir = pathlib.Path("./eval/input/imgs")
     bg_prompts_file = pathlib.Path("./eval/input/prompts/background_prompts.txt")
     garment_prompts_file = pathlib.Path(
         "./eval/input/prompts/garment_prompts_generated.csv"
     )
 
-    max_images = 10
+    max_images = 20
     start_idx = 0
     images = list(
         path_utils.read_images_from_dir(
@@ -77,7 +77,7 @@ def run():
         output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info("Loading Stable Diffusion Image Generator...")
-    image_generator = SDImageGenerator()
+    image_generator = SDImageGenerator(run_on_gpu=True)
     image_generator.load_model(verbose=False)
 
     # generate garments
@@ -192,7 +192,7 @@ def run():
         image_utils.save_image(garment_mask_img, filename)
 
     foreground_masking.unload_model()
-    
+
     """
     # Garment Masking with langSam
     from lang_sam import LangSAM

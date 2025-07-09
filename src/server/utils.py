@@ -54,8 +54,7 @@ def decode_tensor_from_json(img_base64_str: str) -> torch.Tensor:
 
 
 def build_response_str(action: str, status: str, message: str = "", image="") -> str:
-    response = {"action": action, "status": status,
-                "message": message, "image": image}
+    response = {"action": action, "status": status, "message": message, "image": image}
     return json.dumps(response)
 
 
@@ -86,28 +85,31 @@ async def send_action_war(ws, logger, action, message, image=""):
     await ws.send(build_response_str(action, "error", message, image))
 
 
-def pad_to_aspect(
-    img: Image.Image, target_size=(1024, 768)
-) -> Image.Image:
-    target_aspect = target_size[1] / \
-        target_size[0]  # width/height
+def pad_to_aspect(img: Image.Image, target_size=(1024, 768)) -> Image.Image:
+    target_aspect = target_size[0] / target_size[1]  # width / height
     width, height = img.size
     current_aspect = width / height
 
-    # Image already wide enough, no padding needed
-    if current_aspect >= target_aspect:
+    if current_aspect == target_aspect:
         return img
 
-    new_width = int(target_aspect * height)
-    pad_total = new_width - width
-    pad_left = pad_total // 2
+    # Too narrow: pad width
+    if current_aspect < target_aspect:
+        new_width = int(target_aspect * height)
+        pad_total = new_width - width
+        pad_left = pad_total // 2
+        pad_right = pad_total - pad_left
+        new_img = Image.new(img.mode, (new_width, height), color=(255, 255, 255))
+        new_img.paste(img, (pad_left, 0))
+        return new_img
 
-    new_img = Image.new(
-        img.mode, (new_width, height), color=(255, 255, 255)
-    )
-    new_img.paste(img, (pad_left, 0))
-
-    return new_img
+    # Too wide: crop width
+    else:
+        new_width = int(target_aspect * height)
+        left = (width - new_width) // 2
+        right = left + new_width
+        img_cropped = img.crop((left, 0, right, height))
+        return img_cropped
 
 
 def pad_aspect_transform(img_tensor, SIZE=(1024, 768)):
@@ -124,6 +126,3 @@ def pad_aspect_transform(img_tensor, SIZE=(1024, 768)):
     )
 
     return transform(img_tensor)
-
-
-
